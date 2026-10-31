@@ -1,0 +1,66 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  hasModuleAccess,
+  getDefaultModuleForRole,
+  getAccessibleModules,
+  filterAccessibleNavItems,
+  ROLE_PERMISSIONS
+} from './rbac';
+import { AppModule } from '../types';
+
+test('Super Administrator and Managing Director have access to all modules', () => {
+  assert.equal(hasModuleAccess('Super Administrator', 'finance'), true);
+  assert.equal(hasModuleAccess('Super Administrator', 'settings'), true);
+  assert.equal(hasModuleAccess('Managing Director', 'crm'), true);
+  assert.equal(hasModuleAccess('Managing Director', 'smm'), true);
+});
+
+test('Finance Manager has access to finance and procurement, but not SMM or advertising', () => {
+  assert.equal(hasModuleAccess('Finance Manager', 'finance'), true);
+  assert.equal(hasModuleAccess('Finance Manager', 'procurement'), true);
+  assert.equal(hasModuleAccess('Finance Manager', 'smm'), false);
+  assert.equal(hasModuleAccess('Finance Manager', 'advertising'), false);
+});
+
+test('Designer has access to SMM and projects, but not finance or settings', () => {
+  assert.equal(hasModuleAccess('Designer / Content Creator', 'smm'), true);
+  assert.equal(hasModuleAccess('Designer / Content Creator', 'projects'), true);
+  assert.equal(hasModuleAccess('Designer / Content Creator', 'finance'), false);
+  assert.equal(hasModuleAccess('Designer / Content Creator', 'settings'), false);
+});
+
+test('Employee only has access to dashboard and projects', () => {
+  assert.equal(hasModuleAccess('Employee', 'dashboard'), true);
+  assert.equal(hasModuleAccess('Employee', 'projects'), true);
+  assert.equal(hasModuleAccess('Employee', 'finance'), false);
+  assert.equal(hasModuleAccess('Employee', 'hr'), false);
+});
+
+test('Default module returns first allowed module', () => {
+  assert.equal(getDefaultModuleForRole('Finance Manager'), 'dashboard');
+});
+
+test('filterAccessibleNavItems only returns modules permitted for Employee role', () => {
+  const dummyItems: { id: AppModule; label: string }[] = [
+    { id: 'dashboard', label: 'Executive Dashboard' },
+    { id: 'crm', label: 'CRM & Sales' },
+    { id: 'projects', label: 'Projects & Operations' },
+    { id: 'finance', label: 'Finance & Ledger' },
+    { id: 'settings', label: 'Settings & Admin' }
+  ];
+
+  const employeeItems = filterAccessibleNavItems(dummyItems, 'Employee');
+  assert.equal(employeeItems.length, 2);
+  assert.deepEqual(employeeItems.map((i) => i.id), ['dashboard', 'projects']);
+
+  const financeItems = filterAccessibleNavItems(dummyItems, 'Finance Manager');
+  assert.equal(financeItems.length, 3);
+  assert.deepEqual(financeItems.map((i) => i.id), ['dashboard', 'finance', 'settings']);
+});
+
+test('getAccessibleModules returns expected list of modules', () => {
+  const hrModules = getAccessibleModules('HR Manager');
+  assert.deepEqual(hrModules, ['dashboard', 'hr', 'reports']);
+});
+

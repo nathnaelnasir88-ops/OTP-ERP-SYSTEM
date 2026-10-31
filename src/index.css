@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+:root {
+  --otp-primary: #545454;
+  --otp-accent: #feb913;
+  --otp-accent-hover: #e5a408;
+  --otp-accent-light: #fffbeb;
+  --otp-primary-dark: #383838;
+}
+
+/* Dynamic theme radius */
+[data-theme-radius="sharp"] * {
+  border-radius: 0px !important;
+}
+
+[data-theme-radius="rounded"] .rounded-2xl {
+  border-radius: 1.25rem;
+}
+
+/* Compact layout mode overrides */
+[data-theme-density="compact"] .p-4 {
+  padding: 0.75rem;
+}
+
+[data-theme-density="compact"] .p-6 {
+  padding: 1rem;
+}
+
+[data-theme-density="compact"] .py-3 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* Brand utility classes */
+.bg-otp-primary {
+  background-color: var(--otp-primary, #545454);
+}
+
+.text-otp-primary {
+  color: var(--otp-primary, #545454);
+}
+
+.border-otp-primary {
+  border-color: var(--otp-primary, #545454);
+}
+
+.bg-otp-accent {
+  background-color: var(--otp-accent, #feb913);
+}
+
+.text-otp-accent {
+  color: var(--otp-accent, #feb913);
+}
+
+.border-otp-accent {
+  border-color: var(--otp-accent, #feb913);
+}
+
+.hover\:bg-otp-accent:hover {
+  background-color: var(--otp-accent-hover, #e5a408);
+}

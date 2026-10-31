@@ -1,0 +1,6 @@
+{
+  "name": "Open Technology PLC — Integrated ERP System",
+  "description": "Comprehensive enterprise resource planning system for marketing and digital advertising agency operations, including CRM, Projects, SMM Hub, Ad Campaigns, Dual-Stream Finance, HR, and Procurement.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

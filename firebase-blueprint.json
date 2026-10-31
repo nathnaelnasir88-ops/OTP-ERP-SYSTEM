@@ -1,0 +1,335 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role-based access information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "fullName": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["Super Administrator", "Managing Director", "Finance Manager", "Marketing Manager", "Project Manager", "Social Media Manager", "Designer / Content Creator", "Media Buyer", "HR Manager", "Employee"] },
+        "department": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["Active", "Inactive"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "email", "fullName", "role"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Client organization for Open Technology PLC",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientId": { "type": "string" },
+        "companyName": { "type": "string", "maxLength": 150 },
+        "contactPerson": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "email": { "type": "string" },
+        "industry": { "type": "string" },
+        "address": { "type": "string" },
+        "assignedAccountManagerId": { "type": "string" },
+        "contractValue": { "type": "number" },
+        "serviceType": { "type": "string" },
+        "status": { "type": "string", "enum": ["Active", "Prospect", "Inactive", "Churned"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "clientId", "companyName", "contactPerson", "email", "status"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "Sales CRM lead with pipeline stages",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "leadId": { "type": "string" },
+        "companyName": { "type": "string", "maxLength": 150 },
+        "contactPerson": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "source": { "type": "string" },
+        "stage": { "type": "string", "enum": ["New Lead", "Contacted", "Meeting", "Proposal", "Negotiation", "Won", "Lost"] },
+        "estimatedValue": { "type": "number" },
+        "assignedTo": { "type": "string" },
+        "notes": { "type": "string" },
+        "wonProjectId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "leadId", "companyName", "stage"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Client project and operational deliverables",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "name": { "type": "string", "maxLength": 200 },
+        "clientId": { "type": "string" },
+        "projectManagerId": { "type": "string" },
+        "budget": { "type": "number" },
+        "spent": { "type": "number" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "priority": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+        "status": { "type": "string", "enum": ["Planning", "Active", "On Hold", "In Review", "Completed", "Cancelled"] },
+        "progressPercentage": { "type": "number" },
+        "deliverables": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "projectId", "name", "clientId", "status"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Project task with assignment and tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "taskId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "title": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string" },
+        "assigneeId": { "type": "string" },
+        "priority": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+        "status": { "type": "string", "enum": ["Todo", "In Progress", "In Review", "Done"] },
+        "dueDate": { "type": "string" },
+        "estimatedHours": { "type": "number" },
+        "actualHours": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "projectId", "title", "status"]
+    },
+    "ContentAsset": {
+      "title": "ContentAsset",
+      "description": "SMM social media content item in 6-stage workflow",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "contentId": { "type": "string" },
+        "brandId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "platform": { "type": "string", "enum": ["Instagram", "Facebook", "TikTok", "LinkedIn", "YouTube"] },
+        "topic": { "type": "string", "maxLength": 250 },
+        "caption": { "type": "string" },
+        "format": { "type": "string", "enum": ["Reel", "Story", "Carousel", "Static Graphic", "Video"] },
+        "assignedDesignerId": { "type": "string" },
+        "assignedCopywriterId": { "type": "string" },
+        "designLink": { "type": "string" },
+        "publishDate": { "type": "string" },
+        "approvalStatus": { "type": "string", "enum": ["Pending", "Approved", "Revision Requested"] },
+        "productionStatus": { "type": "string", "enum": ["Ideation", "In Canva", "Review", "Approved", "Scheduled", "Published"] },
+        "publishedUrl": { "type": "string" }
+      },
+      "required": ["id", "contentId", "platform", "topic", "format", "productionStatus"]
+    },
+    "AdCampaign": {
+      "title": "AdCampaign",
+      "description": "Advertising campaign with metrics and budget calculations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "campaignId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "name": { "type": "string", "maxLength": 200 },
+        "platform": { "type": "string", "enum": ["Meta Ads", "Facebook", "Instagram", "Google Ads", "TikTok Ads", "LinkedIn Ads"] },
+        "allocatedBudget": { "type": "number" },
+        "actualSpend": { "type": "number" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["Draft", "Pending Approval", "Active", "Paused", "Completed"] },
+        "impressions": { "type": "number" },
+        "reach": { "type": "number" },
+        "clicks": { "type": "number" },
+        "leads": { "type": "number" },
+        "conversions": { "type": "number" },
+        "revenueGenerated": { "type": "number" }
+      },
+      "required": ["id", "campaignId", "name", "platform", "allocatedBudget", "status"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Dual-stream financial ledger entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "transactionId": { "type": "string" },
+        "date": { "type": "string" },
+        "type": { "type": "string", "enum": ["Income", "Expense"] },
+        "stream": { "type": "string", "enum": ["Black Cash", "White Bank"] },
+        "sourceOrClient": { "type": "string" },
+        "details": { "type": "string" },
+        "cashAmount": { "type": "number" },
+        "bankAmount": { "type": "number" },
+        "category": { "type": "string", "enum": ["Transport", "Food expense", "Equipment rental", "Salaries", "Marketing", "Office expenses", "Software and subscriptions", "Production expenses", "Other"] },
+        "vendor": { "type": "string" },
+        "description": { "type": "string" },
+        "recordedById": { "type": "string" },
+        "isReversal": { "type": "boolean" },
+        "reversalOfTransactionId": { "type": "string" }
+      },
+      "required": ["id", "transactionId", "date", "type", "stream", "category"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Client billing invoice with status tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "clientId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "issueDate": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "subtotal": { "type": "number" },
+        "tax": { "type": "number" },
+        "total": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "balance": { "type": "number" },
+        "status": { "type": "string", "enum": ["Draft", "Sent", "Partially Paid", "Paid", "Overdue"] }
+      },
+      "required": ["id", "invoiceNumber", "clientId", "total", "status"]
+    },
+    "Employee": {
+      "title": "Employee",
+      "description": "Internal employee directory and profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "department": { "type": "string", "enum": ["Management", "Marketing", "Creative & Design", "Video Production", "Advertising", "Finance", "Administration"] },
+        "position": { "type": "string" },
+        "reportingManager": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "status": { "type": "string", "enum": ["Active", "On Leave", "Terminated"] },
+        "joiningDate": { "type": "string" },
+        "workloadCapacity": { "type": "number" }
+      },
+      "required": ["id", "employeeId", "fullName", "department", "position", "status"]
+    },
+    "PurchaseOrder": {
+      "title": "PurchaseOrder",
+      "description": "Procurement purchase order with 5-stage approval",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "poNumber": { "type": "string" },
+        "vendor": { "type": "string" },
+        "description": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["Requested", "Approved", "Ordered", "Received", "Completed"] },
+        "requestedBy": { "type": "string" },
+        "approvedBy": { "type": "string" },
+        "date": { "type": "string" }
+      },
+      "required": ["id", "poNumber", "vendor", "totalAmount", "status"]
+    },
+    "Asset": {
+      "title": "Asset",
+      "description": "Agency physical hardware or software asset",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "assetTag": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string", "enum": ["Camera & Video", "Audio & Lighting", "Computing", "Office Furniture", "Software Subscription"] },
+        "purchaseDate": { "type": "string" },
+        "purchaseCost": { "type": "number" },
+        "assignedTo": { "type": "string" },
+        "status": { "type": "string", "enum": ["Active", "Under Maintenance", "Decommissioned"] }
+      },
+      "required": ["id", "assetTag", "name", "category", "status"]
+    },
+    "LeaveRequest": {
+      "title": "LeaveRequest",
+      "description": "Employee time-off request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "leaveType": { "type": "string", "enum": ["Annual", "Sick", "Maternity/Paternity", "Emergency", "Unpaid"] },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "totalDays": { "type": "number" },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "Approved", "Rejected"] }
+      },
+      "required": ["id", "employeeName", "leaveType", "startDate", "endDate", "status"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System event and deadline reminder notification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["Deadline", "Approval", "Budget", "Invoice", "Leave"] },
+        "isRead": { "type": "boolean" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "title", "message", "type", "isRead"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and credentials"
+    },
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Client directory and agency accounts"
+    },
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "CRM leads in the sales pipeline"
+    },
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Operations projects and milestones"
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Tasks connected to projects"
+    },
+    "/contentAssets/{contentId}": {
+      "schema": "ContentAsset",
+      "description": "Social media content items in OTP SMM pipeline"
+    },
+    "/adCampaigns/{campaignId}": {
+      "schema": "AdCampaign",
+      "description": "Advertising campaigns across Meta, Google, TikTok, LinkedIn"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Dual-stream physical cash and corporate bank ledger"
+    },
+    "/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Client invoices and payment balances"
+    },
+    "/employees/{employeeId}": {
+      "schema": "Employee",
+      "description": "Internal staff and employee directory"
+    },
+    "/purchaseOrders/{poId}": {
+      "schema": "PurchaseOrder",
+      "description": "Procurement orders and approval workflow"
+    },
+    "/assets/{assetId}": {
+      "schema": "Asset",
+      "description": "Hardware, camera, lighting, and software assets"
+    },
+    "/leaveRequests/{leaveId}": {
+      "schema": "LeaveRequest",
+      "description": "Employee leave requests and approvals"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Operational alerts and notifications"
+    }
+  }
+}

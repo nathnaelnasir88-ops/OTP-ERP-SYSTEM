@@ -1,0 +1,976 @@
+import {
+  UserProfile,
+  Client,
+  Lead,
+  Project,
+  Task,
+  ContentAsset,
+  AdCampaign,
+  Transaction,
+  Invoice,
+  Employee,
+  PurchaseOrder,
+  Asset,
+  LeaveRequest,
+  NotificationItem,
+  SystemSettings,
+  BrandThemeConfig
+} from '../types';
+
+export const defaultBrandTheme: BrandThemeConfig = {
+  primaryColor: '#545454',
+  accentColor: '#feb913',
+  sidebarTone: 'charcoal',
+  logoStyle: 'monogram',
+  companyName: 'Open Technology PLC',
+  companyShortName: 'OTP',
+  companyTagline: 'Marketing & Digital Advertising Agency',
+  density: 'comfortable',
+  simplicityMode: 'balanced',
+  borderRadius: 'modern',
+  hideDecorativeCards: false,
+  highContrastTables: false,
+  enableTransitions: true
+};
+
+export const initialSettings: SystemSettings = {
+  companyName: 'Open Technology PLC',
+  annualSmmTarget: 1080,
+  baseCurrency: 'ETB',
+  whiteBankInitialBalance: 1450000,
+  blackCashInitialBalance: 185000
+};
+
+export const initialCurrentUser: UserProfile = {
+  id: 'usr-1',
+  email: 'nathnaelnasir88@gmail.com',
+  fullName: 'Nathnael Nasir',
+  role: 'Managing Director',
+  department: 'Management',
+  status: 'Active',
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+};
+
+export const initialEmployees: Employee[] = [
+  {
+    id: 'emp-1',
+    employeeId: 'OTP-001',
+    fullName: 'Nathnael Nasir',
+    department: 'Management',
+    position: 'Managing Director & CEO',
+    reportingManager: 'Board of Directors',
+    email: 'nathnaelnasir88@gmail.com',
+    phone: '+251 911 234 567',
+    status: 'Active',
+    joiningDate: '2021-01-15',
+    workloadCapacity: 85
+  },
+  {
+    id: 'emp-2',
+    employeeId: 'OTP-002',
+    fullName: 'Sara Alemayehu',
+    department: 'Finance',
+    position: 'Finance Director & Chief Accountant',
+    reportingManager: 'Nathnael Nasir',
+    email: 'sara.a@opentechplc.com',
+    phone: '+251 922 456 789',
+    status: 'Active',
+    joiningDate: '2021-03-01',
+    workloadCapacity: 70
+  },
+  {
+    id: 'emp-3',
+    employeeId: 'OTP-003',
+    fullName: 'Dawit Tadesse',
+    department: 'Marketing',
+    position: 'Senior Marketing & Account Director',
+    reportingManager: 'Nathnael Nasir',
+    email: 'dawit.t@opentechplc.com',
+    phone: '+251 933 678 901',
+    status: 'Active',
+    joiningDate: '2021-06-10',
+    workloadCapacity: 90
+  },
+  {
+    id: 'emp-4',
+    employeeId: 'OTP-004',
+    fullName: 'Selamawit Kebede',
+    department: 'Creative & Design',
+    position: 'Lead Graphic Designer & Art Director',
+    reportingManager: 'Dawit Tadesse',
+    email: 'selam.k@opentechplc.com',
+    phone: '+251 944 890 123',
+    status: 'Active',
+    joiningDate: '2022-02-15',
+    workloadCapacity: 95
+  },
+  {
+    id: 'emp-5',
+    employeeId: 'OTP-005',
+    fullName: 'Yonas Bekele',
+    department: 'Video Production',
+    position: 'Director of Photography & Video Producer',
+    reportingManager: 'Dawit Tadesse',
+    email: 'yonas.b@opentechplc.com',
+    phone: '+251 955 012 345',
+    status: 'Active',
+    joiningDate: '2022-04-01',
+    workloadCapacity: 80
+  },
+  {
+    id: 'emp-6',
+    employeeId: 'OTP-006',
+    fullName: 'Biruk Hailu',
+    department: 'Advertising',
+    position: 'Senior Media Buyer & Performance Marketer',
+    reportingManager: 'Dawit Tadesse',
+    email: 'biruk.h@opentechplc.com',
+    phone: '+251 966 234 567',
+    status: 'Active',
+    joiningDate: '2022-08-20',
+    workloadCapacity: 85
+  },
+  {
+    id: 'emp-7',
+    employeeId: 'OTP-007',
+    fullName: 'Meron Teshome',
+    department: 'Administration',
+    position: 'HR & Operations Manager',
+    reportingManager: 'Nathnael Nasir',
+    email: 'meron.t@opentechplc.com',
+    phone: '+251 977 456 789',
+    status: 'Active',
+    joiningDate: '2023-01-10',
+    workloadCapacity: 65
+  }
+];
+
+export const initialClients: Client[] = [
+  {
+    id: 'cli-1',
+    clientId: 'CLI-0101',
+    companyName: 'Telebirr (Ethio Telecom)',
+    contactPerson: 'Ephrem Getachew',
+    phone: '+251 911 000 111',
+    email: 'ephrem.g@telebirr.et',
+    industry: 'Fintech & Telecommunications',
+    address: 'Churchill Road, Addis Ababa',
+    assignedAccountManagerId: 'emp-3',
+    contractValue: 4800000,
+    serviceType: '360° Digital Agency, SMM & Performance Marketing',
+    status: 'Active',
+    notes: 'Primary retainer client. Strict SLA for weekly SMM content output and monthly reporting.',
+    createdAt: '2023-01-15'
+  },
+  {
+    id: 'cli-2',
+    clientId: 'CLI-0102',
+    companyName: 'Dashen Bank SC',
+    contactPerson: 'Hiwot Mulugeta',
+    phone: '+251 922 111 222',
+    email: 'hiwot.m@dashenbanksc.com',
+    industry: 'Banking & Financial Services',
+    address: 'Dashen Bank Head Office, Sudan Street, Addis Ababa',
+    assignedAccountManagerId: 'emp-3',
+    contractValue: 3600000,
+    serviceType: 'Campaign Production, Video Production & Ads Management',
+    status: 'Active',
+    notes: 'Amole & Digital Banking rebrand campaign in progress.',
+    createdAt: '2023-03-20'
+  },
+  {
+    id: 'cli-3',
+    clientId: 'CLI-0103',
+    companyName: 'Ride Ethiopia (Hybrid Designs)',
+    contactPerson: 'Samrawit Fikru',
+    phone: '+251 933 222 333',
+    email: 'samrawit@ride8294.com',
+    industry: 'Ride-Hailing & Logistics',
+    address: 'Bole Medhanialem, Addis Ababa',
+    assignedAccountManagerId: 'emp-3',
+    contractValue: 2400000,
+    serviceType: 'Social Media Growth, Creative Carousels & Video Production',
+    status: 'Active',
+    notes: 'High organic engagement campaign targeting youth commuters.',
+    createdAt: '2023-06-10'
+  },
+  {
+    id: 'cli-4',
+    clientId: 'CLI-0104',
+    companyName: 'Kuriftu Resorts & Spa',
+    contactPerson: 'Tadiwos Belete',
+    phone: '+251 944 333 444',
+    email: 'tadiwos@kurifturesorts.com',
+    industry: 'Hospitality & Luxury Tourism',
+    address: 'Bishoftu & Entoto Park, Ethiopia',
+    assignedAccountManagerId: 'emp-3',
+    contractValue: 1800000,
+    serviceType: 'Influencer Marketing, High-End Video Reels, SMM',
+    status: 'Active',
+    notes: 'Entoto Adventure Park weekend package promotions.',
+    createdAt: '2023-09-01'
+  },
+  {
+    id: 'cli-5',
+    clientId: 'CLI-0105',
+    companyName: 'BGI Ethiopia (St. George Beer)',
+    contactPerson: 'Solomon Worku',
+    phone: '+251 955 444 555',
+    email: 's.worku@bgiethiopia.com',
+    industry: 'Beverage & FMCG',
+    address: 'Mexico Square, Addis Ababa',
+    assignedAccountManagerId: 'emp-3',
+    contractValue: 3200000,
+    serviceType: 'Event Coverage, Sports Sponsorships, Digital Content',
+    status: 'Active',
+    notes: 'Premier League sponsorship content distribution.',
+    createdAt: '2024-01-10'
+  }
+];
+
+export const initialLeads: Lead[] = [
+  {
+    id: 'lead-1',
+    leadId: 'LD-2024-01',
+    companyName: 'Ethiopian Airlines Cargo',
+    contactPerson: 'Fitsum Abadi',
+    email: 'fitsuma@ethiopianairlines.com',
+    phone: '+251 911 888 999',
+    source: 'Executive Referral',
+    stage: 'Negotiation',
+    estimatedValue: 5500000,
+    assignedTo: 'emp-3',
+    notes: 'Global e-commerce cargo route promotion across Africa and Middle East.',
+    createdAt: '2024-09-12'
+  },
+  {
+    id: 'lead-2',
+    leadId: 'LD-2024-02',
+    companyName: 'Safaricom Ethiopia Enterprise',
+    contactPerson: 'Winnie Karanja',
+    email: 'winnie.k@safaricom.et',
+    phone: '+251 977 123 456',
+    source: 'Inbound Request',
+    stage: 'Proposal',
+    estimatedValue: 4200000,
+    assignedTo: 'emp-3',
+    notes: 'B2B enterprise cloud and fiber solutions advertising push.',
+    createdAt: '2024-10-02'
+  },
+  {
+    id: 'lead-3',
+    leadId: 'LD-2024-03',
+    companyName: 'Hyatt Regency Addis Ababa',
+    contactPerson: 'Kidus Yohannes',
+    email: 'kidus.y@hyatt.com',
+    phone: '+251 922 999 000',
+    source: 'Cold Outreach',
+    stage: 'Meeting',
+    estimatedValue: 1200000,
+    assignedTo: 'emp-3',
+    notes: 'End of year banquet and festive season booking promotions.',
+    createdAt: '2024-10-18'
+  },
+  {
+    id: 'lead-4',
+    leadId: 'LD-2024-04',
+    companyName: 'Dangote Cement Ethiopia',
+    contactPerson: 'Mulugeta Desta',
+    email: 'm.desta@dangote.com',
+    phone: '+251 933 777 888',
+    source: 'Website Form',
+    stage: 'Contacted',
+    estimatedValue: 2800000,
+    assignedTo: 'emp-3',
+    notes: 'CSR documentary and construction industry awareness.',
+    createdAt: '2024-10-25'
+  }
+];
+
+export const initialProjects: Project[] = [
+  {
+    id: 'proj-1',
+    projectId: 'PRJ-24-01',
+    name: 'Telebirr SuperApp Q4 Growth Blitz',
+    clientId: 'cli-1',
+    projectManagerId: 'emp-3',
+    budget: 1500000,
+    spent: 890000,
+    startDate: '2024-10-01',
+    endDate: '2024-12-31',
+    priority: 'Critical',
+    status: 'Active',
+    progressPercentage: 65,
+    deliverables: '30 Video Reels, 45 Carousels, Influencer Collaborations, Meta & TikTok Ads',
+    createdAt: '2024-09-28'
+  },
+  {
+    id: 'proj-2',
+    projectId: 'PRJ-24-02',
+    name: 'Dashen Amole 2.0 Rebranding Campaign',
+    clientId: 'cli-2',
+    projectManagerId: 'emp-3',
+    budget: 1200000,
+    spent: 750000,
+    startDate: '2024-09-15',
+    endDate: '2024-11-30',
+    priority: 'High',
+    status: 'Active',
+    progressPercentage: 78,
+    deliverables: 'TV Commercial master, 6 Cutdowns for YouTube, Brand Guideline assets',
+    createdAt: '2024-09-10'
+  },
+  {
+    id: 'proj-3',
+    projectId: 'PRJ-24-03',
+    name: 'Ride Commute Easy - Social Overhaul',
+    clientId: 'cli-3',
+    projectManagerId: 'emp-3',
+    budget: 800000,
+    spent: 420000,
+    startDate: '2024-10-10',
+    endDate: '2024-12-15',
+    priority: 'Medium',
+    status: 'Active',
+    progressPercentage: 50,
+    deliverables: '24 TikTok skits, weekly promo graphics, Driver Hero stories',
+    createdAt: '2024-10-05'
+  },
+  {
+    id: 'proj-4',
+    projectId: 'PRJ-24-04',
+    name: 'Kuriftu Entoto VIP Retreat Showcase',
+    clientId: 'cli-4',
+    projectManagerId: 'emp-5',
+    budget: 650000,
+    spent: 650000,
+    startDate: '2024-08-01',
+    endDate: '2024-10-15',
+    priority: 'Medium',
+    status: 'Completed',
+    progressPercentage: 100,
+    deliverables: '4K Drone footage, Luxury Glamping Reels, Instagram aesthetic grid overhaul',
+    createdAt: '2024-07-25'
+  }
+];
+
+export const initialTasks: Task[] = [
+  {
+    id: 'tsk-1',
+    taskId: 'TSK-101',
+    projectId: 'proj-1',
+    title: 'Finalize Telebirr International Remittance Reel script',
+    description: 'Hook within first 2 seconds highlighting zero transaction fees from diaspora.',
+    assigneeId: 'emp-4',
+    priority: 'High',
+    status: 'In Progress',
+    dueDate: '2024-11-05',
+    estimatedHours: 8,
+    actualHours: 4,
+    createdAt: '2024-10-28'
+  },
+  {
+    id: 'tsk-2',
+    taskId: 'TSK-102',
+    projectId: 'proj-1',
+    title: 'Color Grade Telebirr Merchant QR Video',
+    description: 'Grade in DaVinci Resolve using OTP corporate look profile.',
+    assigneeId: 'emp-5',
+    priority: 'Critical',
+    status: 'Todo',
+    dueDate: '2024-11-03',
+    estimatedHours: 6,
+    actualHours: 0,
+    createdAt: '2024-10-29'
+  },
+  {
+    id: 'tsk-3',
+    taskId: 'TSK-103',
+    projectId: 'proj-2',
+    title: 'Design Dashen Bank Instagram Carousel (10 slides)',
+    description: 'Breakdown of interest rates and mobile loan feature.',
+    assigneeId: 'emp-4',
+    priority: 'Medium',
+    status: 'Done',
+    dueDate: '2024-10-30',
+    estimatedHours: 12,
+    actualHours: 11,
+    createdAt: '2024-10-24'
+  },
+  {
+    id: 'tsk-4',
+    taskId: 'TSK-104',
+    projectId: 'proj-3',
+    title: 'Launch TikTok Spark Ads for Ride Promo Code "RIDEFAST"',
+    description: 'Set budget to $400/week targeting Addis Ababa 18-35 age cohort.',
+    assigneeId: 'emp-6',
+    priority: 'High',
+    status: 'In Review',
+    dueDate: '2024-11-02',
+    estimatedHours: 4,
+    actualHours: 3.5,
+    createdAt: '2024-10-27'
+  }
+];
+
+export const initialContentAssets: ContentAsset[] = [
+  {
+    id: 'cnt-1',
+    contentId: 'SMM-24-001',
+    clientId: 'cli-1',
+    platform: 'Instagram',
+    topic: 'Telebirr Microloans: How to get instant approval in 3 taps',
+    caption: 'Need emergency cash before payday? 💸 Open your Telebirr app, tap Sanduq, and borrow up to 5,000 ETB instantly. Zero paperwork, 100% digital. #Telebirr #FintechEthiopia',
+    format: 'Carousel',
+    assignedDesignerId: 'emp-4',
+    assignedCopywriterId: 'emp-3',
+    designLink: 'https://canva.com/design/otp-telebirr-carousel-01',
+    publishDate: '2024-10-15',
+    approvalStatus: 'Approved',
+    productionStatus: 'Published',
+    publishedUrl: 'https://instagram.com/p/DB123456789',
+    views: 45200,
+    likes: 3820,
+    comments: 245,
+    shares: 612,
+    reach: 52000,
+    createdAt: '2024-10-10'
+  },
+  {
+    id: 'cnt-2',
+    contentId: 'SMM-24-002',
+    clientId: 'cli-1',
+    platform: 'TikTok',
+    topic: 'Street Interview: Can Addis Ababa survive a day cashless?',
+    caption: 'We challenged 3 university students in Piassa to pay for everything with Telebirr only! Watch what happened at the traditional cafe 😂 #CashlessAddis #OTPProduction',
+    format: 'Reel',
+    assignedDesignerId: 'emp-5',
+    assignedCopywriterId: 'emp-3',
+    designLink: 'https://drive.google.com/drive/folders/otp-video-raw-telebirr',
+    publishDate: '2024-10-20',
+    approvalStatus: 'Approved',
+    productionStatus: 'Published',
+    publishedUrl: 'https://tiktok.com/@telebirr/video/987654321',
+    views: 185000,
+    likes: 14200,
+    comments: 890,
+    shares: 2400,
+    reach: 195000,
+    createdAt: '2024-10-12'
+  },
+  {
+    id: 'cnt-3',
+    contentId: 'SMM-24-003',
+    clientId: 'cli-2',
+    platform: 'LinkedIn',
+    topic: 'Dashen Bank SME Export Financing Facility Announcement',
+    caption: 'Empowering Ethiopian exporters to reach global markets. Explore our restructured trade finance facilities with preferential FX rates. #DashenBank #TradeFinance',
+    format: 'Static Graphic',
+    assignedDesignerId: 'emp-4',
+    assignedCopywriterId: 'emp-3',
+    designLink: 'https://canva.com/design/otp-dashen-export-01',
+    publishDate: '2024-10-28',
+    approvalStatus: 'Approved',
+    productionStatus: 'Published',
+    publishedUrl: 'https://linkedin.com/company/dashen-bank/posts/112233',
+    views: 18400,
+    likes: 840,
+    comments: 42,
+    shares: 110,
+    reach: 21000,
+    createdAt: '2024-10-22'
+  },
+  {
+    id: 'cnt-4',
+    contentId: 'SMM-24-004',
+    clientId: 'cli-3',
+    platform: 'Instagram',
+    topic: 'Rainy Addis Commute Life Hack with Ride 8294',
+    caption: 'Rain pouring in Bole? Do not get soaked searching for a minibus. Dial 8294 or tap Ride app to get picked up right at your doorstep. 🚖🌧️ #RideAddis #AlwaysThere',
+    format: 'Reel',
+    assignedDesignerId: 'emp-5',
+    assignedCopywriterId: 'emp-3',
+    designLink: 'https://canva.com/design/otp-ride-reel-rain',
+    publishDate: '2024-11-02',
+    approvalStatus: 'Approved',
+    productionStatus: 'Scheduled',
+    createdAt: '2024-10-26'
+  },
+  {
+    id: 'cnt-5',
+    contentId: 'SMM-24-005',
+    clientId: 'cli-4',
+    platform: 'Instagram',
+    topic: 'Weekend Escape: Canopy Walkway & Sunset Dinner at Entoto',
+    caption: 'Breathe in the eucalyptus fresh air 🌲✨ Tag the person you are bringing to Kuriftu Entoto this Sunday. Link in bio for package reservations.',
+    format: 'Video',
+    assignedDesignerId: 'emp-5',
+    assignedCopywriterId: 'emp-3',
+    designLink: 'https://drive.google.com/kuriftu-sunset-master',
+    publishDate: '2024-11-06',
+    approvalStatus: 'Pending',
+    productionStatus: 'Review',
+    createdAt: '2024-10-27'
+  },
+  {
+    id: 'cnt-6',
+    contentId: 'SMM-24-006',
+    clientId: 'cli-5',
+    platform: 'Facebook',
+    topic: 'Matchday Fan Zone: St. George vs Coffee Derby Preview',
+    caption: 'The biggest derby in Ethiopian football is here! Which side are you repping? Drop your score prediction below for a chance to win VIP tickets ⚽🍻 #StGeorgeBeer #EthiopianPremierLeague',
+    format: 'Carousel',
+    assignedDesignerId: 'emp-4',
+    assignedCopywriterId: 'emp-3',
+    designLink: 'https://canva.com/design/otp-bgi-derby',
+    publishDate: '2024-11-08',
+    approvalStatus: 'Pending',
+    productionStatus: 'In Canva',
+    createdAt: '2024-10-29'
+  },
+  {
+    id: 'cnt-7',
+    contentId: 'SMM-24-007',
+    clientId: 'cli-1',
+    platform: 'TikTok',
+    topic: 'Utility Bill Payment Tutorial with Telebirr QR',
+    caption: 'Say goodbye to long bank queues for water and electricity bills! Watch how quick it is to scan and clear your invoice in 15 seconds. #TelebirrHacks #AddisTech',
+    format: 'Story',
+    assignedDesignerId: 'emp-4',
+    assignedCopywriterId: 'emp-3',
+    designLink: 'https://canva.com/design/otp-story-bills',
+    publishDate: '2024-11-10',
+    approvalStatus: 'Pending',
+    productionStatus: 'Ideation',
+    createdAt: '2024-10-30'
+  }
+];
+
+export const initialAdCampaigns: AdCampaign[] = [
+  {
+    id: 'cmp-1',
+    campaignId: 'ADC-2024-01',
+    clientId: 'cli-1',
+    name: 'Telebirr SuperApp App Install & KYC Conversion',
+    platform: 'Meta Ads',
+    allocatedBudget: 350000,
+    actualSpend: 285000,
+    startDate: '2024-10-01',
+    endDate: '2024-11-15',
+    status: 'Active',
+    impressions: 1850000,
+    reach: 920000,
+    clicks: 64200,
+    leads: 14200,
+    conversions: 8900,
+    revenueGenerated: 950000,
+    createdAt: '2024-09-28'
+  },
+  {
+    id: 'cmp-2',
+    campaignId: 'ADC-2024-02',
+    clientId: 'cli-2',
+    name: 'Dashen Amole Diaspora Remittance Google Search & Video',
+    platform: 'Google Ads',
+    allocatedBudget: 280000,
+    actualSpend: 190000,
+    startDate: '2024-10-05',
+    endDate: '2024-11-30',
+    status: 'Active',
+    impressions: 740000,
+    reach: 410000,
+    clicks: 28500,
+    leads: 4800,
+    conversions: 2100,
+    revenueGenerated: 620000,
+    createdAt: '2024-10-02'
+  },
+  {
+    id: 'cmp-3',
+    campaignId: 'ADC-2024-03',
+    clientId: 'cli-3',
+    name: 'Ride TikTok Spark Ads: Driver Onboarding & Promo Discount',
+    platform: 'TikTok Ads',
+    allocatedBudget: 180000,
+    actualSpend: 165000,
+    startDate: '2024-09-20',
+    endDate: '2024-10-31',
+    status: 'Active',
+    impressions: 2400000,
+    reach: 1250000,
+    clicks: 82000,
+    leads: 6200,
+    conversions: 3400,
+    revenueGenerated: 440000,
+    createdAt: '2024-09-18'
+  },
+  {
+    id: 'cmp-4',
+    campaignId: 'ADC-2024-04',
+    clientId: 'cli-4',
+    name: 'Kuriftu Entoto Adventure Luxury Staycation Awareness',
+    platform: 'Instagram',
+    allocatedBudget: 120000,
+    actualSpend: 118000,
+    startDate: '2024-08-15',
+    endDate: '2024-10-15',
+    status: 'Completed',
+    impressions: 620000,
+    reach: 340000,
+    clicks: 19400,
+    leads: 1850,
+    conversions: 920,
+    revenueGenerated: 380000,
+    createdAt: '2024-08-10'
+  }
+];
+
+export const initialTransactions: Transaction[] = [
+  {
+    id: 'tx-001',
+    transactionId: 'TX-2024-1001',
+    date: '2024-10-05',
+    type: 'Income',
+    stream: 'White Bank',
+    sourceOrClient: 'Telebirr (Ethio Telecom)',
+    details: 'Q4 Agency Retainer Milestone Payment #1',
+    cashAmount: 0,
+    bankAmount: 1200000,
+    category: 'Marketing',
+    vendor: 'Commercial Bank of Ethiopia',
+    description: 'Direct wire transfer to Open Technology PLC Awash Bank corporate account.',
+    recordedById: 'emp-2',
+    createdAt: '2024-10-05'
+  },
+  {
+    id: 'tx-002',
+    transactionId: 'TX-2024-1002',
+    date: '2024-10-08',
+    type: 'Expense',
+    stream: 'White Bank',
+    sourceOrClient: 'Awash Bank Corporate',
+    details: 'Production Studio & Headquarters Lease (Bi-Annual)',
+    cashAmount: 0,
+    bankAmount: 320000,
+    category: 'Office expenses',
+    vendor: 'Getu Commercial Center PLC',
+    description: 'Corporate bank transfer for 4th floor office & studio rent.',
+    recordedById: 'emp-2',
+    createdAt: '2024-10-08'
+  },
+  {
+    id: 'tx-003',
+    transactionId: 'TX-2024-1010',
+    date: '2024-10-12',
+    type: 'Expense',
+    stream: 'Black Cash',
+    sourceOrClient: 'Production Petty Cash',
+    details: 'Location shoot van transport & generator fuel for Entoto shoot',
+    cashAmount: 24500,
+    bankAmount: 0,
+    category: 'Transport',
+    vendor: 'TotalEnergies Bole & Private Van Rental',
+    description: 'Physical cash disbursed to video crew for 2-day on-site production.',
+    recordedById: 'emp-2',
+    createdAt: '2024-10-12'
+  },
+  {
+    id: 'tx-004',
+    transactionId: 'TX-2024-1015',
+    date: '2024-10-15',
+    type: 'Income',
+    stream: 'Black Cash',
+    sourceOrClient: 'Kuriftu Resorts Event Deposit',
+    details: 'Cash deposit for weekend video production shoot logistics',
+    cashAmount: 85000,
+    bankAmount: 0,
+    category: 'Production expenses',
+    vendor: 'Kuriftu Events Team',
+    description: 'Physical cash received in office safe for immediate on-site crew costs.',
+    recordedById: 'emp-2',
+    createdAt: '2024-10-15'
+  },
+  {
+    id: 'tx-005',
+    transactionId: 'TX-2024-1020',
+    date: '2024-10-20',
+    type: 'Expense',
+    stream: 'Black Cash',
+    sourceOrClient: 'Production Petty Cash',
+    details: 'Actors, extras, and catering catering for Dashen Bank TVC shoot',
+    cashAmount: 38000,
+    bankAmount: 0,
+    category: 'Food expense',
+    vendor: 'Addis Catering & Freelance Talent',
+    description: 'Cash payment with manual voucher signed by talent.',
+    recordedById: 'emp-2',
+    createdAt: '2024-10-20'
+  },
+  {
+    id: 'tx-006',
+    transactionId: 'TX-2024-1025',
+    date: '2024-10-25',
+    type: 'Expense',
+    stream: 'White Bank',
+    sourceOrClient: 'International USD Debit Card',
+    details: 'Adobe Creative Cloud Team + Canva Pro + Figma Annual Renewals',
+    cashAmount: 0,
+    bankAmount: 94000,
+    category: 'Software and subscriptions',
+    vendor: 'Adobe Systems / Canva / Figma',
+    description: 'Official bank foreign currency card settlement for design suites.',
+    recordedById: 'emp-2',
+    createdAt: '2024-10-25'
+  },
+  {
+    id: 'tx-007',
+    transactionId: 'TX-2024-1028',
+    date: '2024-10-28',
+    type: 'Income',
+    stream: 'White Bank',
+    sourceOrClient: 'Dashen Bank SC',
+    details: 'Amole Rebrand Phase 1 Sign-Off Wire',
+    cashAmount: 0,
+    bankAmount: 900000,
+    category: 'Marketing',
+    vendor: 'Dashen Bank Settlement',
+    description: 'Official corporate deposit.',
+    recordedById: 'emp-2',
+    createdAt: '2024-10-28'
+  }
+];
+
+export const initialInvoices: Invoice[] = [
+  {
+    id: 'inv-1',
+    invoiceNumber: 'INV-2024-089',
+    clientId: 'cli-1',
+    projectId: 'proj-1',
+    issueDate: '2024-10-01',
+    dueDate: '2024-10-31',
+    subtotal: 1200000,
+    tax: 180000,
+    total: 1380000,
+    paidAmount: 1380000,
+    balance: 0,
+    status: 'Paid',
+    items: [
+      { description: 'Monthly Agency Retainer Q4 Milestone #1', quantity: 1, unitPrice: 1200000, amount: 1200000 }
+    ],
+    createdAt: '2024-10-01'
+  },
+  {
+    id: 'inv-2',
+    invoiceNumber: 'INV-2024-090',
+    clientId: 'cli-2',
+    projectId: 'proj-2',
+    issueDate: '2024-10-15',
+    dueDate: '2024-11-15',
+    subtotal: 900000,
+    tax: 135000,
+    total: 1035000,
+    paidAmount: 900000,
+    balance: 135000,
+    status: 'Partially Paid',
+    items: [
+      { description: 'Dashen Amole TVC Production & Color Master Deliverable', quantity: 1, unitPrice: 900000, amount: 900000 }
+    ],
+    createdAt: '2024-10-15'
+  },
+  {
+    id: 'inv-3',
+    invoiceNumber: 'INV-2024-091',
+    clientId: 'cli-3',
+    projectId: 'proj-3',
+    issueDate: '2024-10-20',
+    dueDate: '2024-11-20',
+    subtotal: 450000,
+    tax: 67500,
+    total: 517500,
+    paidAmount: 0,
+    balance: 517500,
+    status: 'Sent',
+    items: [
+      { description: 'Ride Ethiopia Social Media Management & Creative Production (Oct)', quantity: 1, unitPrice: 450000, amount: 450000 }
+    ],
+    createdAt: '2024-10-20'
+  }
+];
+
+export const initialPurchaseOrders: PurchaseOrder[] = [
+  {
+    id: 'po-1',
+    poNumber: 'PO-2024-041',
+    vendor: 'Camera Hub Addis (Sony Authorized Partner)',
+    description: 'Sony FX3 Cinema Camera + 24-70mm GM II Lens for Video Unit',
+    totalAmount: 480000,
+    status: 'Completed',
+    requestedBy: 'emp-5',
+    approvedBy: 'emp-1',
+    date: '2024-09-10',
+    createdAt: '2024-09-10'
+  },
+  {
+    id: 'po-2',
+    poNumber: 'PO-2024-042',
+    vendor: 'Aputure Lighting East Africa',
+    description: 'Aputure 600d Pro Daylight LED + Light Dome III Softbox',
+    totalAmount: 210000,
+    status: 'Received',
+    requestedBy: 'emp-5',
+    approvedBy: 'emp-1',
+    date: '2024-10-12',
+    createdAt: '2024-10-12'
+  },
+  {
+    id: 'po-3',
+    poNumber: 'PO-2024-043',
+    vendor: 'Bole Apple Store & Tech Importers',
+    description: '2x Apple MacBook Pro 16" M3 Max (36GB RAM) for Lead Editors',
+    totalAmount: 640000,
+    status: 'Approved',
+    requestedBy: 'emp-4',
+    approvedBy: 'emp-1',
+    date: '2024-10-24',
+    createdAt: '2024-10-24'
+  },
+  {
+    id: 'po-4',
+    poNumber: 'PO-2024-044',
+    vendor: 'DJI Official Reseller Ethiopia',
+    description: 'DJI Mic 2 (2 TX + 1 RX) Wireless Audio System + Accessories',
+    totalAmount: 85000,
+    status: 'Requested',
+    requestedBy: 'emp-5',
+    date: '2024-10-29',
+    createdAt: '2024-10-29'
+  }
+];
+
+export const initialAssets: Asset[] = [
+  {
+    id: 'ast-1',
+    assetTag: 'OTP-EQ-001',
+    name: 'Sony FX3 Full-Frame Cinema Camera',
+    category: 'Camera & Video',
+    purchaseDate: '2023-04-12',
+    purchaseCost: 460000,
+    assignedTo: 'emp-5',
+    status: 'Active'
+  },
+  {
+    id: 'ast-2',
+    assetTag: 'OTP-EQ-002',
+    name: 'Sony FE 24-70mm f/2.8 GM II Lens',
+    category: 'Camera & Video',
+    purchaseDate: '2023-04-12',
+    purchaseCost: 240000,
+    assignedTo: 'emp-5',
+    status: 'Active'
+  },
+  {
+    id: 'ast-3',
+    assetTag: 'OTP-EQ-003',
+    name: 'DJI Mavic 3 Pro Cine Drone',
+    category: 'Camera & Video',
+    purchaseDate: '2023-08-20',
+    purchaseCost: 380000,
+    assignedTo: 'emp-5',
+    status: 'Active'
+  },
+  {
+    id: 'ast-4',
+    assetTag: 'OTP-EQ-004',
+    name: 'Apple Mac Studio M2 Ultra (64GB RAM, 2TB SSD)',
+    category: 'Computing',
+    purchaseDate: '2023-06-15',
+    purchaseCost: 520000,
+    assignedTo: 'emp-4',
+    status: 'Active'
+  },
+  {
+    id: 'ast-5',
+    assetTag: 'OTP-EQ-005',
+    name: 'Aputure Light Storm 600d Pro',
+    category: 'Audio & Lighting',
+    purchaseDate: '2023-11-05',
+    purchaseCost: 210000,
+    assignedTo: 'emp-5',
+    status: 'Active'
+  }
+];
+
+export const initialLeaveRequests: LeaveRequest[] = [
+  {
+    id: 'lv-1',
+    employeeName: 'Selamawit Kebede',
+    leaveType: 'Annual',
+    startDate: '2024-11-12',
+    endDate: '2024-11-18',
+    totalDays: 5,
+    reason: 'Family visit to Hawassa during post-campaign lull',
+    status: 'Approved',
+    createdAt: '2024-10-25'
+  },
+  {
+    id: 'lv-2',
+    employeeName: 'Biruk Hailu',
+    leaveType: 'Sick',
+    startDate: '2024-10-28',
+    endDate: '2024-10-29',
+    totalDays: 2,
+    reason: 'Medical checkup and flu recovery',
+    status: 'Approved',
+    createdAt: '2024-10-27'
+  },
+  {
+    id: 'lv-3',
+    employeeName: 'Yonas Bekele',
+    leaveType: 'Emergency',
+    startDate: '2024-11-08',
+    endDate: '2024-11-09',
+    totalDays: 2,
+    reason: 'Urgent family personal matter',
+    status: 'Pending',
+    createdAt: '2024-10-30'
+  }
+];
+
+export const initialNotifications: NotificationItem[] = [
+  {
+    id: 'notif-1',
+    title: 'SMM Quota Milestone',
+    message: 'OTP SMM Hub is on pace with 90 posts targeted for current month.',
+    type: 'Deadline',
+    isRead: false,
+    timestamp: '10 mins ago',
+    linkModule: 'smm'
+  },
+  {
+    id: 'notif-2',
+    title: 'Purchase Order Approval Needed',
+    message: 'PO-2024-044 for DJI Wireless Audio Kit requires Director approval.',
+    type: 'Approval',
+    isRead: false,
+    timestamp: '1 hour ago',
+    linkModule: 'procurement'
+  },
+  {
+    id: 'notif-3',
+    title: 'Campaign Budget Alert',
+    message: 'Telebirr Meta Ads campaign reached 81.4% budget utilization.',
+    type: 'Budget',
+    isRead: false,
+    timestamp: '3 hours ago',
+    linkModule: 'advertising'
+  },
+  {
+    id: 'notif-4',
+    title: 'Invoice Due Reminder',
+    message: 'Invoice INV-2024-090 for Dashen Bank balance (135,000 ETB) due in 15 days.',
+    type: 'Invoice',
+    isRead: true,
+    timestamp: '1 day ago',
+    linkModule: 'finance'
+  }
+];
