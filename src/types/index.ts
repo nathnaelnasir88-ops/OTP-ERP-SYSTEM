@@ -111,13 +111,33 @@ export type LeaveStatus = 'Pending' | 'Approved' | 'Rejected';
 export interface UserProfile {
   id: string;
   email: string;
+  username?: string;
   fullName: string;
   role: UserRole;
   department: Department;
   avatarUrl?: string;
+  phone?: string;
+  position?: string;
+  bio?: string;
   status: 'Active' | 'Inactive';
   createdAt?: string;
 }
+
+export interface ManagedUserAccount {
+  id: string;
+  fullName: string;
+  username: string; // login username
+  email: string;    // corporate email
+  password: string; // login password created by super admin
+  role: UserRole;
+  department: Department;
+  phone?: string;
+  position?: string;
+  avatarUrl?: string;
+  status: 'Active' | 'Inactive' | 'On Leave';
+  createdAt: string;
+}
+
 
 export interface Client {
   id: string;
@@ -332,6 +352,45 @@ export interface SystemSettings {
   whiteBankInitialBalance: number;
   blackCashInitialBalance: number;
 }
+
+export type AuditLogDomain =
+  | 'finance'
+  | 'hr'
+  | 'crm'
+  | 'projects'
+  | 'smm'
+  | 'advertising'
+  | 'procurement'
+  | 'system';
+
+export type AuditActionType =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'REVERSAL'
+  | 'APPROVAL'
+  | 'PAYMENT'
+  | 'STATUS_CHANGE';
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  actorName: string;
+  actorRole: UserRole;
+  actorEmail: string;
+  domain: AuditLogDomain;
+  action: AuditActionType;
+  entityType: string;
+  entityId: string;
+  summary: string;
+  previousValue?: string;
+  newValue?: string;
+  streamOrDepartment?: string;
+  stream?: FinancialStream;
+  department?: string;
+  severity: 'normal' | 'elevated' | 'critical';
+}
+
 
 export type LogoStyle = 'monogram' | 'shield-emblem' | 'custom-image' | 'minimal-text';
 export type SidebarTone = 'charcoal' | 'dark' | 'light' | 'accent-border';

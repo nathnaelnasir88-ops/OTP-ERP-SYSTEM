@@ -10,8 +10,8 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../services/firebase';
-import { UserProfile, UserRole, Department } from '../types';
-import { initialCurrentUser } from '../services/mockData';
+import { UserProfile, UserRole, Department, ManagedUserAccount } from '../types';
+import { initialCurrentUser, initialManagedAccounts } from '../services/mockData';
 
 interface AuthContextType {
   user: User | null;
@@ -20,7 +20,7 @@ interface AuthContextType {
   authError: string | null;
   clearAuthError: () => void;
   loginWithGoogle: () => Promise<void>;
-  loginWithEmail: (email: string, pass: string) => Promise<void>;
+  loginWithEmail: (usernameOrEmail: string, pass: string) => Promise<void>;
   registerWithEmail: (
     email: string,
     pass: string,
@@ -31,11 +31,18 @@ interface AuthContextType {
   logout: () => Promise<void>;
   loginAsDemoUser: (profile: Partial<UserProfile>) => void;
   updateUserRole: (role: UserRole) => void;
+  updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  // Super Administrator Member Management
+  managedAccounts: ManagedUserAccount[];
+  addMemberByAdmin: (data: Omit<ManagedUserAccount, 'id' | 'createdAt'>) => Promise<ManagedUserAccount>;
+  updateMemberByAdmin: (id: string, updates: Partial<ManagedUserAccount>) => Promise<void>;
+  removeMemberByAdmin: (id: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_PROFILE_KEY = 'OTP_ERP_USER_PROFILE';
+const LOCAL_STORAGE_MEMBERS_KEY = 'OTP_ERP_MANAGED_MEMBERS';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -43,8 +50,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const saved = localStorage.getItem(LOCAL_STORAGE_PROFILE_KEY);
     return saved ? JSON.parse(saved) : initialCurrentUser;
   });
+  const [managedAccounts, setManagedAccounts] = useState<ManagedUserAccount[]>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_MEMBERS_KEY);
+    return saved ? JSON.parse(saved) : initialManagedAccounts;
+  });
   const [loading, setLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -137,34 +149,76 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // 2. Email & Password Login
-  const loginWithEmail = async (email: string, pass: string) => {
+  // 2. Email or Username & Password Login
+  const loginWithEmail = async (identifier: string, pass: string) => {
     setLoading(true);
     setAuthError(null);
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, pass);
-      const firebaseUser = result.user;
+    const clean = identifier.trim().toLowerCase();
 
-      try {
-        const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
-        if (snap.exists()) {
-          const profile = snap.data() as UserProfile;
+    try {
+      // Check managed corporate roster first
+      const matched = managedAccounts.find(
+        (a) => a.username.toLowerCase() === clean || a.email.toLowerCase() === clean
+      );
+
+      if (matched) {
+        if (matched.password === pass) {
+          const profile: UserProfile = {
+            id: matched.id,
+            fullName: matched.fullName,
+            username: matched.username,
+            email: matched.email,
+            role: matched.role,
+            department: matched.department,
+            position: matched.position,
+            phone: matched.phone,
+            avatarUrl:
+              matched.avatarUrl ||
+              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+            status: matched.status === 'Active' ? 'Active' : 'Inactive',
+            createdAt: matched.createdAt
+          };
           setUserProfile(profile);
           localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(profile));
+          setLoading(false);
+          return;
+        } else {
+          throw new Error('Invalid corporate password. Please verify and try again.');
         }
-      } catch (e) {
-        console.warn('Firestore fetch failed:', e);
       }
+
+      // Try Firebase Auth if email format
+      if (clean.includes('@')) {
+        const result = await signInWithEmailAndPassword(auth, identifier, pass);
+        const firebaseUser = result.user;
+
+        try {
+          const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (snap.exists()) {
+            const profile = snap.data() as UserProfile;
+            setUserProfile(profile);
+            localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(profile));
+          }
+        } catch (e) {
+          console.warn('Firestore fetch failed:', e);
+        }
+        return;
+      }
+
+      throw new Error(
+        'Account not recognized. Please contact your Super Administrator to provision your username and password.'
+      );
     } catch (error: any) {
-      console.error('Email Login Error:', error);
-      setAuthError(error.message || 'Invalid email or password');
+      console.error('Login Error:', error);
+      const msg = error.message || 'Invalid username or password';
+      setAuthError(msg);
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  // 3. Email & Password Registration
+  // 3. Email & Password Registration (Used internally by Super Admin or legacy flow)
   const registerWithEmail = async (
     email: string,
     pass: string,
@@ -232,12 +286,96 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(profile));
   };
 
-  // 6. Role Switcher for active session
+  // 6. Role Switcher for active session (Super Admin testing only)
   const updateUserRole = (role: UserRole) => {
     if (!userProfile) return;
     const updated = { ...userProfile, role };
     setUserProfile(updated);
     localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(updated));
+  };
+
+  // 7. Update User's Own Profile (Employees can edit own name, phone, bio, avatar)
+  const updateUserProfile = async (updates: Partial<UserProfile>) => {
+    if (!userProfile) return;
+    const safeUpdates = { ...updates };
+    // Non-super-admins cannot elevate their own role
+    if (userProfile.role !== 'Super Administrator') {
+      delete safeUpdates.role;
+    }
+    const updated: UserProfile = { ...userProfile, ...safeUpdates };
+    setUserProfile(updated);
+    localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(updated));
+
+    // Sync in managed accounts roster
+    setManagedAccounts((prev) => {
+      const next = prev.map((a) => (a.id === updated.id ? { ...a, ...safeUpdates } : a));
+      localStorage.setItem(LOCAL_STORAGE_MEMBERS_KEY, JSON.stringify(next));
+      return next;
+    });
+
+    try {
+      await setDoc(doc(db, 'users', userProfile.id), safeUpdates, { merge: true });
+    } catch (e) {
+      console.warn('Firestore update profile warning:', e);
+    }
+  };
+
+  // 8. Super Administrator Manual Member Provisioning
+  const addMemberByAdmin = async (
+    data: Omit<ManagedUserAccount, 'id' | 'createdAt'>
+  ): Promise<ManagedUserAccount> => {
+    const newId = 'usr-' + Date.now();
+    const newMember: ManagedUserAccount = {
+      ...data,
+      id: newId,
+      status: data.status || 'Active',
+      createdAt: new Date().toISOString()
+    };
+
+    const nextAccounts = [newMember, ...managedAccounts];
+    setManagedAccounts(nextAccounts);
+    localStorage.setItem(LOCAL_STORAGE_MEMBERS_KEY, JSON.stringify(nextAccounts));
+
+    // Persist to Firestore
+    try {
+      const userDoc: UserProfile = {
+        id: newId,
+        email: newMember.email,
+        username: newMember.username,
+        fullName: newMember.fullName,
+        role: newMember.role,
+        department: newMember.department,
+        phone: newMember.phone,
+        position: newMember.position,
+        avatarUrl:
+          newMember.avatarUrl ||
+          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        status: 'Active',
+        createdAt: newMember.createdAt
+      };
+      await setDoc(doc(db, 'users', newId), userDoc);
+    } catch (err) {
+      console.warn('Could not persist new member to Firestore:', err);
+    }
+
+    return newMember;
+  };
+
+  const updateMemberByAdmin = async (id: string, updates: Partial<ManagedUserAccount>) => {
+    const nextAccounts = managedAccounts.map((acc) => (acc.id === id ? { ...acc, ...updates } : acc));
+    setManagedAccounts(nextAccounts);
+    localStorage.setItem(LOCAL_STORAGE_MEMBERS_KEY, JSON.stringify(nextAccounts));
+    try {
+      await setDoc(doc(db, 'users', id), updates, { merge: true });
+    } catch (e) {
+      console.warn('Could not update member in Firestore:', e);
+    }
+  };
+
+  const removeMemberByAdmin = async (id: string) => {
+    const nextAccounts = managedAccounts.filter((acc) => acc.id !== id);
+    setManagedAccounts(nextAccounts);
+    localStorage.setItem(LOCAL_STORAGE_MEMBERS_KEY, JSON.stringify(nextAccounts));
   };
 
   return (
@@ -253,13 +391,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         registerWithEmail,
         logout,
         loginAsDemoUser,
-        updateUserRole
+        updateUserRole,
+        updateUserProfile,
+        managedAccounts,
+        addMemberByAdmin,
+        updateMemberByAdmin,
+        removeMemberByAdmin
       }}
     >
       {children}
     </AuthContext.Provider>
   );
 };
+
 
 export const useAuth = () => {
   const context = useContext(AuthContext);

@@ -23,16 +23,18 @@ test('Finance Manager has access to finance and procurement, but not SMM or adve
   assert.equal(hasModuleAccess('Finance Manager', 'advertising'), false);
 });
 
-test('Designer has access to SMM and projects, but not finance or settings', () => {
+test('Designer has access to SMM, projects, and settings, but not finance or hr', () => {
   assert.equal(hasModuleAccess('Designer / Content Creator', 'smm'), true);
   assert.equal(hasModuleAccess('Designer / Content Creator', 'projects'), true);
+  assert.equal(hasModuleAccess('Designer / Content Creator', 'settings'), true);
   assert.equal(hasModuleAccess('Designer / Content Creator', 'finance'), false);
-  assert.equal(hasModuleAccess('Designer / Content Creator', 'settings'), false);
+  assert.equal(hasModuleAccess('Designer / Content Creator', 'hr'), false);
 });
 
-test('Employee only has access to dashboard and projects', () => {
+test('Employee has access to dashboard, projects, and personal settings', () => {
   assert.equal(hasModuleAccess('Employee', 'dashboard'), true);
   assert.equal(hasModuleAccess('Employee', 'projects'), true);
+  assert.equal(hasModuleAccess('Employee', 'settings'), true);
   assert.equal(hasModuleAccess('Employee', 'finance'), false);
   assert.equal(hasModuleAccess('Employee', 'hr'), false);
 });
@@ -41,7 +43,7 @@ test('Default module returns first allowed module', () => {
   assert.equal(getDefaultModuleForRole('Finance Manager'), 'dashboard');
 });
 
-test('filterAccessibleNavItems only returns modules permitted for Employee role', () => {
+test('filterAccessibleNavItems returns permitted modules including personal settings for Employee role', () => {
   const dummyItems: { id: AppModule; label: string }[] = [
     { id: 'dashboard', label: 'Executive Dashboard' },
     { id: 'crm', label: 'CRM & Sales' },
@@ -51,16 +53,17 @@ test('filterAccessibleNavItems only returns modules permitted for Employee role'
   ];
 
   const employeeItems = filterAccessibleNavItems(dummyItems, 'Employee');
-  assert.equal(employeeItems.length, 2);
-  assert.deepEqual(employeeItems.map((i) => i.id), ['dashboard', 'projects']);
+  assert.equal(employeeItems.length, 3);
+  assert.deepEqual(employeeItems.map((i) => i.id), ['dashboard', 'projects', 'settings']);
 
   const financeItems = filterAccessibleNavItems(dummyItems, 'Finance Manager');
   assert.equal(financeItems.length, 3);
   assert.deepEqual(financeItems.map((i) => i.id), ['dashboard', 'finance', 'settings']);
 });
 
-test('getAccessibleModules returns expected list of modules', () => {
+test('getAccessibleModules returns expected list of modules for HR Manager', () => {
   const hrModules = getAccessibleModules('HR Manager');
-  assert.deepEqual(hrModules, ['dashboard', 'hr', 'reports']);
+  assert.deepEqual(hrModules, ['dashboard', 'hr', 'reports', 'settings']);
 });
+
 

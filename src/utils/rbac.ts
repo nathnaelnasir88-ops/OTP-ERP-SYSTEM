@@ -38,41 +38,49 @@ export const ROLE_PERMISSIONS: Record<UserRole, AppModule[]> = {
     'smm',
     'advertising',
     'projects',
-    'reports'
+    'reports',
+    'settings'
   ],
   'Project Manager': [
     'dashboard',
     'projects',
     'crm',
     'smm',
-    'reports'
+    'reports',
+    'settings'
   ],
   'Social Media Manager': [
     'dashboard',
     'smm',
     'projects',
-    'reports'
+    'reports',
+    'settings'
   ],
   'Designer / Content Creator': [
     'dashboard',
     'smm',
-    'projects'
+    'projects',
+    'settings'
   ],
   'Media Buyer': [
     'dashboard',
     'advertising',
-    'reports'
+    'reports',
+    'settings'
   ],
   'HR Manager': [
     'dashboard',
     'hr',
-    'reports'
+    'reports',
+    'settings'
   ],
   'Employee': [
     'dashboard',
-    'projects'
+    'projects',
+    'settings'
   ]
 };
+
 
 export function hasModuleAccess(role: UserRole, module: AppModule): boolean {
   const allowed = ROLE_PERMISSIONS[role];

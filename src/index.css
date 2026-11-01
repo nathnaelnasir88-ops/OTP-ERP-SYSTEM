@@ -1,11 +1,49 @@
 @import "tailwindcss";
 
 :root {
-  --otp-primary: #545454;
-  --otp-accent: #feb913;
-  --otp-accent-hover: #e5a408;
-  --otp-accent-light: #fffbeb;
-  --otp-primary-dark: #383838;
+  --otp-primary: #1d1d1f;
+  --otp-accent: #1ec94c;
+  --otp-accent-blue: #1d7dfa;
+  --otp-accent-pink: #f73b9b;
+  --otp-accent-gold: #feb913;
+  --otp-surface: #f5f6f8;
+  --otp-card: #ffffff;
+}
+
+body {
+  background-color: #e4e7ec;
+  color: #1d1d1f;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Diagonal hatched stripe pattern for Cognify progress bars & blocks */
+.cognify-stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.38) 0px,
+    rgba(255, 255, 255, 0.38) 2.5px,
+    transparent 2.5px,
+    transparent 7px
+  );
+}
+
+.cognify-stripes-strong {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.55) 0px,
+    rgba(255, 255, 255, 0.55) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+}
+
+/* Hide scrollbars on horizontal pill nav */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Dynamic theme radius */
@@ -14,7 +52,7 @@
 }
 
 [data-theme-radius="rounded"] .rounded-2xl {
-  border-radius: 1.25rem;
+  border-radius: 1.5rem;
 }
 
 /* Compact layout mode overrides */
@@ -33,29 +71,25 @@
 
 /* Brand utility classes */
 .bg-otp-primary {
-  background-color: var(--otp-primary, #545454);
+  background-color: var(--otp-primary, #1d1d1f);
 }
 
 .text-otp-primary {
-  color: var(--otp-primary, #545454);
+  color: var(--otp-primary, #1d1d1f);
 }
 
 .border-otp-primary {
-  border-color: var(--otp-primary, #545454);
+  border-color: var(--otp-primary, #1d1d1f);
 }
 
 .bg-otp-accent {
-  background-color: var(--otp-accent, #feb913);
+  background-color: var(--otp-accent, #1ec94c);
 }
 
 .text-otp-accent {
-  color: var(--otp-accent, #feb913);
+  color: var(--otp-accent, #1ec94c);
 }
 
 .border-otp-accent {
-  border-color: var(--otp-accent, #feb913);
-}
-
-.hover\:bg-otp-accent:hover {
-  background-color: var(--otp-accent-hover, #e5a408);
+  border-color: var(--otp-accent, #1ec94c);
 }

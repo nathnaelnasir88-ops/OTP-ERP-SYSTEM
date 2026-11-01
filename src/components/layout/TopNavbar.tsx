@@ -1,24 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Menu,
   Search,
   Bell,
   ShieldCheck,
   ChevronDown,
   RefreshCw,
-  Database,
-  ExternalLink,
   CheckCircle2,
   AlertTriangle,
   FileText,
   User,
-  Briefcase,
-  Palette
+  Settings,
+  LogOut
 } from 'lucide-react';
 import { useERP } from '../../context/ERPContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole, AppModule } from '../../types';
-import { LogOut } from 'lucide-react';
+import { filterAccessibleNavItems } from '../../utils/rbac';
 
 interface TopNavbarProps {
   onToggleSidebar: () => void;
@@ -36,21 +33,22 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar }) => {
     notifications,
     markNotificationAsRead,
     clearAllNotifications,
-    isFirebaseConnected,
     resetToSampleData,
     searchQuery,
     setSearchQuery,
     clients,
     projects,
-    leads,
-    employees
+    leads
   } = useERP();
 
   const { userProfile, updateUserRole, logout } = useAuth();
+  const activeRole = userProfile?.role || currentUser.role || 'Super Administrator';
+  const isSuperAdmin = activeRole === 'Super Administrator';
 
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [showSearchInput, setShowSearchInput] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const roleMenuRef = useRef<HTMLDivElement>(null);
@@ -73,18 +71,20 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar }) => {
     'Employee'
   ];
 
-  const moduleTitles: Record<AppModule, { title: string; subtitle: string }> = {
-    dashboard: { title: 'Executive Overview', subtitle: 'Real-time operational KPIs & company health' },
-    crm: { title: 'CRM & Sales Pipeline', subtitle: 'Lead tracking, client accounts & deal conversions' },
-    projects: { title: 'Projects & Operations', subtitle: 'Deliverables, task assignments & Gantt milestones' },
-    smm: { title: 'Social Media Hub', subtitle: 'Annual 1,080 post quota, monthly schedules & 6-stage workflow' },
-    advertising: { title: 'Advertising & Performance', subtitle: 'Multi-platform ad spend, CPC/CTR & ROAS tracking' },
-    finance: { title: 'Finance & Dual-Stream Ledger', subtitle: 'Black cash & white bank streams, non-destructive audit trail' },
-    hr: { title: 'HR & Team Workload', subtitle: 'Employee records, department capacity & leave management' },
-    procurement: { title: 'Procurement & Assets', subtitle: '5-stage purchase requests, vendor directory & camera equipment' },
-    reports: { title: 'Reports & Analytics', subtitle: 'Exportable business intelligence & financial statements' },
-    settings: { title: 'Settings & RBAC Administration', subtitle: 'Company configurations & role permissions' }
-  };
+  const allNavPills: { id: AppModule; label: string }[] = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'crm', label: 'CRM' },
+    { id: 'projects', label: 'Projects' },
+    { id: 'smm', label: 'SMM Hub' },
+    { id: 'advertising', label: 'Ads' },
+    { id: 'finance', label: 'Finance' },
+    { id: 'hr', label: 'HR' },
+    { id: 'procurement', label: 'Procurement' },
+    { id: 'reports', label: 'Reports' },
+    { id: 'settings', label: 'Settings' }
+  ];
+
+  const accessiblePills = filterAccessibleNavItems(allNavPills, activeRole);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -122,195 +122,253 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar }) => {
     (matchingClients.length > 0 || matchingProjects.length > 0 || matchingLeads.length > 0);
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs">
-      <div className="flex items-center justify-between px-4 sm:px-6 py-3">
-        {/* Left: Mobile hamburger + Breadcrumbs */}
-        <div className="flex items-center gap-3 sm:gap-4">
+    <header className="sticky top-0 z-30 bg-[#f5f6f8]/90 backdrop-blur-md px-4 sm:px-7 lg:px-9 pt-4 pb-3">
+      <div className="flex items-center justify-between gap-2">
+        {/* Left: Brand Pill (Cognify Style) */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onToggleSidebar}
-            className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:outline-hidden"
-            aria-label="Toggle navigation"
+            className="flex items-center gap-2 bg-[#ebedf0] hover:bg-[#dfe2e7] px-3.5 py-2 rounded-full transition-all group cursor-pointer"
+            title="Open navigation drawer"
           >
-            <Menu className="w-5 h-5" />
-          </button>
-
-          <div>
-            <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-              <span className="truncate max-w-[140px] sm:max-w-none">{theme.companyName || 'Open Technology PLC'}</span>
-              <span className="text-slate-300">/</span>
-              <span className="font-semibold capitalize text-slate-800">{currentModule}</span>
+            <div className="w-6 h-6 rounded-full bg-[#1d1d1f] text-white flex items-center justify-center font-black text-[10px] tracking-tight">
+              {theme.companyShortName || 'OTP'}
             </div>
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight">
-              {moduleTitles[currentModule]?.title || 'ERP Portal'}
-            </h1>
-          </div>
+            <span className="font-bold text-sm text-[#1d1d1f] tracking-tight">
+              {theme.companyName === 'Open Technology PLC' ? 'OpenTech' : theme.companyName}
+            </span>
+          </button>
         </div>
 
-        {/* Center: Global Search */}
-        <div className="hidden md:flex flex-1 max-w-md mx-6 relative" ref={searchRef}>
-          <div className="relative w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setShowSearchDropdown(true);
-              }}
-              onFocus={() => setShowSearchDropdown(true)}
-              placeholder="Search clients, projects, leads, campaigns..."
-              className="w-full pl-9 pr-4 py-1.5 bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-xs border border-slate-200 focus:border-blue-500 rounded-xl focus:outline-hidden transition-all text-slate-800 placeholder:text-slate-400"
-            />
-            {searchQuery && (
+        {/* Center: Horizontal Pill Navigation Bar (Exact Cognify Aesthetic) */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1 max-w-full">
+          {accessiblePills.map((pill) => {
+            const isActive = currentModule === pill.id;
+            return (
               <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+                key={pill.id}
+                onClick={() => setCurrentModule(pill.id)}
+                className={`px-3.5 py-2 rounded-full text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
+                  isActive
+                    ? 'bg-[#1d1d1f] text-white shadow-xs'
+                    : 'bg-[#ebedf0] hover:bg-[#dfe2e7] text-[#1d1d1f]'
+                }`}
               >
-                ✕
+                {pill.label}
               </button>
+            );
+          })}
+        </div>
+
+
+        {/* Right: Circular Utility Buttons & Avatar */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Expandable Global Search Pill */}
+          <div className="relative hidden sm:block" ref={searchRef}>
+            {showSearchInput ? (
+              <div className="flex items-center bg-white rounded-full px-3.5 py-1.5 border border-slate-200 shadow-xs w-56 transition-all">
+                <Search className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSearchDropdown(true);
+                  }}
+                  onFocus={() => setShowSearchDropdown(true)}
+                  placeholder="Search ERP..."
+                  className="w-full text-xs bg-transparent focus:outline-hidden text-[#1d1d1f]"
+                />
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setShowSearchInput(false);
+                  }}
+                  className="text-[10px] text-slate-400 hover:text-slate-700 ml-1"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowSearchInput(true)}
+                className="w-10 h-10 rounded-full bg-[#ebedf0] hover:bg-[#dfe2e7] flex items-center justify-center text-[#1d1d1f] transition-colors"
+                title="Search clients, projects, leads"
+                aria-label="Search ERP"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Quick Search Results Dropdown */}
+            {showSearchDropdown && hasSearchResults && (
+              <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden z-50 max-h-80 overflow-y-auto p-2">
+                {matchingProjects.length > 0 && (
+                  <div className="p-2 border-b border-slate-100">
+                    <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-2 py-1">
+                      Projects ({matchingProjects.length})
+                    </div>
+                    {matchingProjects.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          navigateTo('projects');
+                          setShowSearchDropdown(false);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 hover:bg-[#f5f6f8] rounded-xl flex items-center justify-between text-xs"
+                      >
+                        <span className="font-medium text-[#1d1d1f] truncate">{p.name}</span>
+                        <span className="text-[10px] text-[#1d7dfa] font-semibold">{p.status}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {matchingClients.length > 0 && (
+                  <div className="p-2 border-b border-slate-100">
+                    <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-2 py-1">
+                      Clients ({matchingClients.length})
+                    </div>
+                    {matchingClients.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => {
+                          navigateTo('crm', 'clients');
+                          setShowSearchDropdown(false);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 hover:bg-[#f5f6f8] rounded-xl flex items-center justify-between text-xs"
+                      >
+                        <span className="font-medium text-[#1d1d1f] truncate">{c.companyName}</span>
+                        <span className="text-[10px] text-slate-500">{c.industry}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {matchingLeads.length > 0 && (
+                  <div className="p-2">
+                    <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-2 py-1">
+                      Sales Leads ({matchingLeads.length})
+                    </div>
+                    {matchingLeads.map((l) => (
+                      <button
+                        key={l.id}
+                        onClick={() => {
+                          navigateTo('crm', 'pipeline');
+                          setShowSearchDropdown(false);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 hover:bg-[#f5f6f8] rounded-xl flex items-center justify-between text-xs"
+                      >
+                        <span className="font-medium text-[#1d1d1f] truncate">{l.companyName}</span>
+                        <span className="text-[10px] font-medium text-[#1ec94c]">{l.stage}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Quick Search Dropdown */}
-          {showSearchDropdown && hasSearchResults && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50 max-h-80 overflow-y-auto">
-              {matchingProjects.length > 0 && (
-                <div className="p-2 border-b border-slate-100">
-                  <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2 py-1">
-                    Projects ({matchingProjects.length})
-                  </div>
-                  {matchingProjects.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => {
-                        navigateTo('projects');
-                        setShowSearchDropdown(false);
-                      }}
-                      className="w-full text-left px-2 py-1.5 hover:bg-blue-50 rounded-lg flex items-center justify-between text-xs"
-                    >
-                      <span className="font-medium text-slate-800 truncate">{p.name}</span>
-                      <span className="text-[10px] text-blue-600 font-semibold">{p.status}</span>
-                    </button>
-                  ))}
+          {/* Role Switcher / Indicator Pill */}
+          <div className="relative" ref={roleMenuRef}>
+            {isSuperAdmin ? (
+              <button
+                onClick={() => setShowRoleMenu(!showRoleMenu)}
+                className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#ebedf0] hover:bg-[#dfe2e7] transition-all text-xs cursor-pointer"
+                aria-label="Switch User Role"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-[#1d7dfa]" />
+                <div className="text-left">
+                  <span className="sr-only">Role</span>
+                  <span className="font-medium text-[#1d1d1f] truncate max-w-[120px]">
+                    {activeRole}
+                  </span>
                 </div>
-              )}
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+              </button>
+            ) : (
+              <div
+                className="hidden md:flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#ebedf0] text-xs cursor-default"
+                title="Your assigned corporate role"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-slate-500" />
+                <span className="sr-only">Role</span>
+                <span className="font-medium text-[#1d1d1f] truncate max-w-[120px]">
+                  {activeRole}
+                </span>
+              </div>
+            )}
 
-              {matchingClients.length > 0 && (
-                <div className="p-2 border-b border-slate-100">
-                  <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2 py-1">
-                    Clients ({matchingClients.length})
-                  </div>
-                  {matchingClients.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => {
-                        navigateTo('crm', 'clients');
-                        setShowSearchDropdown(false);
-                      }}
-                      className="w-full text-left px-2 py-1.5 hover:bg-blue-50 rounded-lg flex items-center justify-between text-xs"
-                    >
-                      <span className="font-medium text-slate-800 truncate">{c.companyName}</span>
-                      <span className="text-[10px] text-slate-500">{c.industry}</span>
-                    </button>
-                  ))}
+            {isSuperAdmin && showRoleMenu && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-3xl shadow-2xl border border-slate-100 z-50 p-2 overflow-hidden">
+                <div className="px-3 py-2 border-b border-slate-100 text-[11px] font-medium text-slate-500 flex items-center justify-between">
+                  <span>Switch Role (Test RBAC)</span>
+                  <span className="text-[9px] bg-[#ebedf0] text-[#1d1d1f] px-2 py-0.5 rounded-full font-bold">Admin</span>
                 </div>
-              )}
-
-              {matchingLeads.length > 0 && (
-                <div className="p-2">
-                  <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2 py-1">
-                    Sales Leads ({matchingLeads.length})
-                  </div>
-                  {matchingLeads.map((l) => (
-                    <button
-                      key={l.id}
-                      onClick={() => {
-                        navigateTo('crm', 'pipeline');
-                        setShowSearchDropdown(false);
-                      }}
-                      className="w-full text-left px-2 py-1.5 hover:bg-blue-50 rounded-lg flex items-center justify-between text-xs"
-                    >
-                      <span className="font-medium text-slate-800 truncate">{l.companyName}</span>
-                      <span className="text-[10px] font-medium text-emerald-600">{l.stage}</span>
-                    </button>
-                  ))}
+                <div className="max-h-72 overflow-y-auto py-1 space-y-0.5">
+                  {rolesList.map((r) => {
+                    const isCurrent = activeRole === r;
+                    return (
+                      <button
+                        key={r}
+                        onClick={() => {
+                          updateUserRole(r);
+                          setUserRole(r);
+                          setShowRoleMenu(false);
+                        }}
+                        className={`w-full text-left px-3.5 py-2 rounded-full text-xs flex items-center justify-between transition-colors ${
+                          isCurrent
+                            ? 'bg-[#1d1d1f] text-white font-medium'
+                            : 'text-[#1d1d1f] hover:bg-[#f5f6f8]'
+                        }`}
+                      >
+                        <span>{r}</span>
+                        {isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-[#1ec94c]"></span>}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Right side controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Firestore indicator */}
-          <div
-            title="Cloud Firestore Connection Status"
-            className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Firestore Synced</span>
+              </div>
+            )}
           </div>
 
-          {/* Theme & Brand Customizer Button */}
+          {/* Settings / UI Customizer Circular Button (Exact Cognify Gear Icon) */}
           <button
             onClick={() => setIsCustomizerOpen(true)}
-            title="Full control over brand colors, logo, and UI simplicity"
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 transition-all text-xs font-semibold text-slate-800 shadow-2xs group"
-            aria-label="Customize Brand and UI"
+            title="Design & Brand Studio"
+            aria-label="Design & Brand"
+            className="w-10 h-10 rounded-full bg-[#ebedf0] hover:bg-[#dfe2e7] flex items-center justify-center text-[#1d1d1f] transition-colors cursor-pointer"
           >
-            <div className="flex -space-x-1.5 items-center">
-              <span
-                className="w-3.5 h-3.5 rounded-full border border-white shadow-2xs"
-                style={{ backgroundColor: theme.primaryColor }}
-              />
-              <span
-                className="w-3.5 h-3.5 rounded-full border border-white shadow-2xs"
-                style={{ backgroundColor: theme.accentColor }}
-              />
-            </div>
-            <span className="hidden sm:inline text-xs font-semibold">Design & Brand</span>
+            <Settings className="w-4 h-4" />
           </button>
 
-          {/* Quick Demo Reset / Seed button */}
-          <button
-            onClick={() => {
-              if (window.confirm('Reset ERP state to standard Open Technology PLC sample data?')) {
-                resetToSampleData();
-              }
-            }}
-            title="Reset to fresh demo sample data"
-            className="p-1.5 sm:px-2 sm:py-1.5 text-xs text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 flex items-center gap-1 transition-colors"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline text-[11px] font-medium">Seed Data</span>
-          </button>
-
-          {/* Notifications Drawer Toggle */}
+          {/* Notifications Bell Circular Button (with Green Dot like Cognify) */}
           <div className="relative" ref={notifMenuRef}>
             <button
               onClick={() => setShowNotifMenu(!showNotifMenu)}
-              className="relative p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              className="relative w-10 h-10 rounded-full bg-[#ebedf0] hover:bg-[#dfe2e7] flex items-center justify-center text-[#1d1d1f] transition-colors cursor-pointer"
               aria-label="View notifications"
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
+                <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[#1ec94c] ring-2 ring-[#ebedf0]"></span>
               )}
             </button>
 
             {showNotifMenu && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl border border-slate-100 z-50 overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-3.5 bg-[#f8f9fb] border-b border-slate-100">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-900 text-xs">Notifications</span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                    <span className="font-semibold text-[#1d1d1f] text-xs">Notifications</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#ebedf0] text-[#1d1d1f]">
                       {unreadCount} unread
                     </span>
                   </div>
                   {unreadCount > 0 && (
                     <button
                       onClick={clearAllNotifications}
-                      className="text-[11px] text-blue-600 hover:text-blue-800 font-medium"
+                      className="text-[11px] text-[#1d7dfa] hover:underline font-medium"
                     >
                       Mark all as read
                     </button>
@@ -328,23 +386,23 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar }) => {
                           setShowNotifMenu(false);
                         }
                       }}
-                      className={`p-3.5 hover:bg-slate-50 transition-colors cursor-pointer flex gap-3 ${
-                        !n.isRead ? 'bg-blue-50/40' : ''
+                      className={`p-4 hover:bg-[#f8f9fb] transition-colors cursor-pointer flex gap-3 ${
+                        !n.isRead ? 'bg-blue-50/30' : ''
                       }`}
                     >
                       <div className="mt-0.5">
                         {n.type === 'Deadline' && <AlertTriangle className="w-4 h-4 text-amber-500" />}
-                        {n.type === 'Approval' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
-                        {n.type === 'Budget' && <AlertTriangle className="w-4 h-4 text-rose-500" />}
-                        {n.type === 'Invoice' && <FileText className="w-4 h-4 text-indigo-500" />}
+                        {n.type === 'Approval' && <CheckCircle2 className="w-4 h-4 text-[#1ec94c]" />}
+                        {n.type === 'Budget' && <AlertTriangle className="w-4 h-4 text-[#f73b9b]" />}
+                        {n.type === 'Invoice' && <FileText className="w-4 h-4 text-[#1d7dfa]" />}
                         {n.type === 'Leave' && <User className="w-4 h-4 text-purple-500" />}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <h4 className="text-xs font-semibold text-slate-900">{n.title}</h4>
+                          <h4 className="text-xs font-semibold text-[#1d1d1f]">{n.title}</h4>
                           <span className="text-[10px] text-slate-400">{n.timestamp}</span>
                         </div>
-                        <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">{n.message}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{n.message}</p>
                       </div>
                     </div>
                   ))}
@@ -353,93 +411,70 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar }) => {
             )}
           </div>
 
-          {/* Interactive Role Switcher */}
-          <div className="relative" ref={roleMenuRef}>
-            <button
-              onClick={() => setShowRoleMenu(!showRoleMenu)}
-              className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50/70 hover:bg-slate-100 transition-all text-xs"
-              aria-label="Switch User Role"
-            >
-              <ShieldCheck className="w-4 h-4 text-indigo-600" />
-              <div className="text-left hidden sm:block">
-                <div className="text-[10px] uppercase font-bold text-slate-400 leading-none">Role</div>
-                <div className="font-semibold text-slate-800 leading-tight truncate max-w-[120px]">
-                  {userProfile?.role || currentUser.role}
-                </div>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-            </button>
-
-            {showRoleMenu && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-2 overflow-hidden">
-                <div className="px-3 py-2 border-b border-slate-100 text-[11px] font-medium text-slate-500">
-                  Switch Role (Test RBAC Permissions)
-                </div>
-                <div className="max-h-72 overflow-y-auto py-1 space-y-0.5">
-                  {rolesList.map((r) => {
-                    const activeRole = userProfile?.role || currentUser.role;
-                    const isCurrent = activeRole === r;
-                    return (
-                      <button
-                        key={r}
-                        onClick={() => {
-                          updateUserRole(r);
-                          setUserRole(r);
-                          setShowRoleMenu(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-colors ${
-                          isCurrent
-                            ? 'bg-blue-50 text-blue-700 font-semibold'
-                            : 'text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        <span>{r}</span>
-                        {isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* User profile avatar & dropdown */}
-          <div className="relative pl-1" ref={profileMenuRef}>
+          {/* Circular User Profile Avatar & Menu */}
+          <div className="relative" ref={profileMenuRef}>
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-2 p-0.5 rounded-full hover:ring-2 hover:ring-blue-400 transition-all"
+              className="flex items-center p-0.5 rounded-full bg-[#ebedf0] hover:ring-2 hover:ring-[#1d1d1f]/20 transition-all cursor-pointer"
               aria-label="User Account Menu"
             >
               <img
                 src={userProfile?.avatarUrl || currentUser.avatarUrl}
                 alt={userProfile?.fullName || currentUser.fullName}
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-200"
+                className="w-9 h-9 rounded-full object-cover"
               />
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-3 overflow-hidden text-xs">
-                <div className="pb-3 border-b border-slate-100">
-                  <div className="font-bold text-slate-900 text-sm">
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-3xl shadow-2xl border border-slate-100 z-50 p-2 overflow-hidden">
+                <div className="px-3.5 py-3 border-b border-slate-100">
+                  <div className="font-semibold text-xs text-[#1d1d1f] truncate">
                     {userProfile?.fullName || currentUser.fullName}
                   </div>
-                  <div className="text-slate-500 text-[11px] truncate">
+                  <div className="text-[11px] text-slate-500 truncate">
                     {userProfile?.email || currentUser.email}
                   </div>
-                  <div className="mt-1.5 inline-block px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px]">
-                    {userProfile?.role || currentUser.role}
+                  <div className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-[#ebedf0] text-[#1d1d1f]">
+                    <ShieldCheck className="w-3 h-3 text-[#1ec94c]" />
+                    <span>{activeRole}</span>
                   </div>
                 </div>
 
-                <div className="pt-2">
+                <div className="py-1 space-y-0.5">
                   <button
-                    onClick={async () => {
+                    onClick={() => {
+                      setCurrentModule('settings');
                       setShowProfileMenu(false);
-                      await logout();
                     }}
-                    className="w-full text-left px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 font-semibold flex items-center gap-2 transition-colors"
+                    className="w-full text-left px-3.5 py-2 rounded-full text-xs text-[#1d1d1f] hover:bg-[#f5f6f8] flex items-center gap-2 transition-colors"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <User className="w-3.5 h-3.5 text-slate-500" />
+                    <span>My Profile & Settings</span>
+                  </button>
+
+                  {isSuperAdmin && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Reset ERP state to standard Open Technology PLC sample data?')) {
+                          resetToSampleData();
+                        }
+                        setShowProfileMenu(false);
+                      }}
+                      className="w-full text-left px-3.5 py-2 rounded-full text-xs text-[#1d1d1f] hover:bg-[#f5f6f8] flex items-center gap-2 transition-colors"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Reset Demo Data</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      logout();
+                    }}
+                    className="w-full text-left px-3.5 py-2 rounded-full text-xs text-rose-600 hover:bg-rose-50 font-medium flex items-center gap-2 transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
                     <span>Sign Out</span>
                   </button>
                 </div>

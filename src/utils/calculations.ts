@@ -3,7 +3,10 @@ import {
   ContentAsset,
   AdCampaign,
   Project,
-  Invoice
+  Invoice,
+  AuditLogEntry,
+  AuditLogDomain,
+  AuditActionType
 } from '../types';
 
 export interface SMMMetrics {
@@ -204,3 +207,103 @@ export function calculateProjectProgress(projects: Project[]) {
     totalSpent
   };
 }
+
+export interface AuditLogFilterOptions {
+  domain?: AuditLogDomain | 'all' | 'ALL';
+  action?: AuditActionType | 'ALL';
+  streamOrDepartment?: string | 'All' | 'ALL';
+  stream?: string | 'All' | 'ALL';
+  department?: string | 'All' | 'ALL';
+  searchQuery?: string;
+}
+
+export function filterAuditLogs(
+  logs: AuditLogEntry[],
+  options: AuditLogFilterOptions
+): AuditLogEntry[] {
+  const {
+    domain = 'all',
+    action = 'ALL',
+    streamOrDepartment = 'All',
+    stream = 'All',
+    department = 'All',
+    searchQuery = ''
+  } = options;
+
+  const query = searchQuery.trim().toLowerCase();
+
+  return logs.filter((entry) => {
+    if (domain !== 'all' && domain !== 'ALL' && entry.domain !== domain) return false;
+    if (action !== 'ALL' && entry.action !== action) return false;
+
+    const entryStreamOrDept = entry.streamOrDepartment || entry.stream || entry.department || '';
+
+    if (
+      streamOrDepartment !== 'All' &&
+      streamOrDepartment !== 'ALL' &&
+      entryStreamOrDept !== streamOrDepartment
+    ) {
+      return false;
+    }
+
+    if (
+      stream !== 'All' &&
+      stream !== 'ALL' &&
+      entry.stream !== stream &&
+      entry.streamOrDepartment !== stream
+    ) {
+      return false;
+    }
+
+    if (
+      department !== 'All' &&
+      department !== 'ALL' &&
+      entry.department !== department &&
+      entry.streamOrDepartment !== department
+    ) {
+      return false;
+    }
+
+    if (query) {
+      const haystack = [
+        entry.actorName,
+        entry.actorRole,
+        entry.actorEmail,
+        entry.entityType,
+        entry.entityId,
+        entry.summary,
+        entry.previousValue || '',
+        entry.newValue || '',
+        entryStreamOrDept
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      if (!haystack.includes(query)) return false;
+    }
+
+    return true;
+  });
+}
+
+export function calculateAuditLogSummary(logs: AuditLogEntry[]) {
+  const totalEvents = logs.length;
+  const financeEvents = logs.filter((l) => l.domain === 'finance').length;
+  const hrEvents = logs.filter((l) => l.domain === 'hr').length;
+  const criticalOrElevatedEvents = logs.filter(
+    (l) => l.severity === 'critical' || l.severity === 'elevated'
+  ).length;
+  const reversalsCount = logs.filter((l) => l.action === 'REVERSAL').length;
+  const uniqueActors = new Set(logs.map((l) => l.actorEmail || l.actorName)).size;
+
+  return {
+    totalEvents,
+    financeEvents,
+    hrEvents,
+    criticalOrElevatedEvents,
+    criticalEvents: criticalOrElevatedEvents,
+    reversalsCount,
+    uniqueActors
+  };
+}
+

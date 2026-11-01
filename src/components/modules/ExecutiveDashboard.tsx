@@ -1,31 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Users,
   Briefcase,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  AlertCircle,
-  Share2,
-  Megaphone,
-  CheckCircle2,
-  Clock,
   ArrowUpRight,
+  ArrowRight,
+  Plus,
+  Calendar,
+  ChevronDown,
+  Infinity as InfinityIcon,
+  CheckCircle2,
   ShieldAlert,
-  ArrowRight
+  Share2,
+  ListTodo,
+  Layers,
+  Sparkles,
+  Wallet
 } from 'lucide-react';
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
-  CartesianGrid,
-  PieChart,
-  Pie,
-  Cell
+  ReferenceLine
 } from 'recharts';
 import { useERP } from '../../context/ERPContext';
 import {
@@ -39,6 +37,7 @@ export const ExecutiveDashboard: React.FC = () => {
   const {
     clients,
     projects,
+    tasks,
     transactions,
     invoices,
     contentAssets,
@@ -46,9 +45,12 @@ export const ExecutiveDashboard: React.FC = () => {
     employees,
     purchaseOrders,
     setCurrentModule,
-    settings,
-    theme
+    settings
   } = useERP();
+
+  const [statusMode, setStatusMode] = useState<'count' | 'percent'>('count');
+  const [selectedDay, setSelectedDay] = useState<string>('Wed');
+  const [trendPeriod, setTrendPeriod] = useState<'Daily' | 'Monthly'>('Daily');
 
   // DERIVED METRICS
   const activeClientsCount = clients.filter((c) => c.status === 'Active').length;
@@ -60,36 +62,13 @@ export const ExecutiveDashboard: React.FC = () => {
   const { accountsReceivable } = calculateReceivablesAndPayables(invoices);
   const smmMetrics = calculateSMMMetrics(contentAssets, settings.annualSmmTarget);
   const projectMetrics = calculateProjectProgress(projects);
-
   const totalAdSpend = adCampaigns.reduce((acc, c) => acc + (c.actualSpend || 0), 0);
 
   // Average team productivity
   const avgTeamCapacity =
     employees.length > 0
       ? Math.round(employees.reduce((acc, e) => acc + (e.workloadCapacity || 0), 0) / employees.length)
-      : 80;
-
-  // Monthly breakdown for financial chart
-  const monthlyFinancialData = [
-    { month: 'Jun', revenue: 980000, expenses: 540000, profit: 440000 },
-    { month: 'Jul', revenue: 1120000, expenses: 620000, profit: 500000 },
-    { month: 'Aug', revenue: 1350000, expenses: 710000, profit: 640000 },
-    { month: 'Sep', revenue: 1680000, expenses: 830000, profit: 850000 },
-    {
-      month: 'Oct',
-      revenue: financialBalances.totalIncome || 2100000,
-      expenses: financialBalances.totalExpense || 890000,
-      profit: financialBalances.netProfit || 1210000
-    }
-  ];
-
-  // Project distribution
-  const projectStatusCounts = [
-    { name: 'Active', value: projects.filter((p) => p.status === 'Active').length, color: '#3b82f6' },
-    { name: 'In Review', value: projects.filter((p) => p.status === 'In Review').length, color: '#f59e0b' },
-    { name: 'Planning', value: projects.filter((p) => p.status === 'Planning').length, color: '#8b5cf6' },
-    { name: 'Completed', value: projects.filter((p) => p.status === 'Completed').length, color: '#10b981' }
-  ].filter((p) => p.value > 0);
+      : 78;
 
   // Pending items for executive action
   const pendingPOs = purchaseOrders.filter((po) => po.status === 'Requested');
@@ -97,421 +76,716 @@ export const ExecutiveDashboard: React.FC = () => {
     (c) => c.approvalStatus === 'Pending' || c.productionStatus === 'Review'
   );
 
+  // Productivity & Financial Wave Data (Smooth dual spline like Cognify)
+  const waveChartData = [
+    { day: 'Mon', revenueIndex: 70, spendIndex: 35, label: '1,420k ETB', spendLabel: '410k ETB' },
+    { day: 'Tue', revenueIndex: 82, spendIndex: 48, label: '1,650k ETB', spendLabel: '460k ETB' },
+    { day: 'Wed', revenueIndex: 92, spendIndex: 43, label: '2,185k ETB', spendLabel: '476k ETB' },
+    { day: 'Thu', revenueIndex: 74, spendIndex: 58, label: '1,890k ETB', spendLabel: '520k ETB' },
+    { day: 'Fri', revenueIndex: 86, spendIndex: 50, label: '2,040k ETB', spendLabel: '490k ETB' }
+  ];
+
+  // Project & Deliverable distribution for Center Ring Gauge
+  const totalDeliverables = settings.annualSmmTarget || 1080;
+  const completedCount = smmMetrics.totalPublished + tasks.filter((t) => t.status === 'Done').length;
+  const inProgressCount = projects.filter((p) => p.status === 'Active').length + tasks.filter((t) => t.status === 'In Progress').length;
+  const upcomingCount = reviewContent.length + projects.filter((p) => p.status === 'Planning' || p.status === 'In Review').length;
+
+  const totalProjectsAndTasks = projects.length + tasks.length + contentAssets.length;
+  const completedRatio = Math.round(((completedCount || 4) / Math.max(1, totalProjectsAndTasks)) * 100);
+  const inProgressRatio = Math.round(((inProgressCount || 5) / Math.max(1, totalProjectsAndTasks)) * 100);
+  const upcomingRatio = Math.max(10, 100 - completedRatio - inProgressRatio);
+
   return (
-    <div className="space-y-6">
-      {/* Top Welcome & Summary Header (Dynamic Brand Colors & Simplicity Mode) */}
-      {!theme.hideDecorativeCards ? (
-        <div
-          className="rounded-2xl p-6 text-white shadow-md relative overflow-hidden transition-all"
-          style={{
-            backgroundColor: theme.primaryColor,
-            backgroundImage: `linear-gradient(135deg, ${theme.primaryColor} 0%, #2b2b2b 100%)`
-          }}
-        >
-          <div
-            className="absolute right-0 top-0 bottom-0 w-96 pointer-events-none opacity-20"
-            style={{
-              background: `radial-gradient(ellipse at top right, ${theme.accentColor}, transparent 70%)`
-            }}
-          />
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div
-                className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold mb-2 border"
-                style={{
-                  backgroundColor: `${theme.accentColor}20`,
-                  color: theme.accentColor,
-                  borderColor: `${theme.accentColor}50`
-                }}
-              >
-                <span
-                  className="w-2 h-2 rounded-full animate-pulse"
-                  style={{ backgroundColor: theme.accentColor }}
-                ></span>
-                Live Agency ERP Engine
+    <div className="space-y-6 pb-4">
+      {/* =========================================================================
+          TOP PAGE HEADER (Exact Cognify Title + Dark Pill Action Button)
+          ========================================================================= */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 pb-1">
+        <div>
+          <h1 className="text-2xl sm:text-[32px] font-normal tracking-tight text-[#1d1d1f] leading-tight">
+            Project & Agency Management Overview
+          </h1>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setCurrentModule('smm')}
+            className="px-4 py-2.5 rounded-full text-xs font-medium bg-white hover:bg-[#ebedf0] text-[#1d1d1f] border border-slate-200/80 transition-all shadow-2xs cursor-pointer"
+          >
+            SMM 1,080 Quota ({smmMetrics.totalPublished}/{totalDeliverables})
+          </button>
+          <button
+            onClick={() => setCurrentModule('projects')}
+            className="px-5 py-2.5 rounded-full text-xs font-medium bg-[#1d1d1f] hover:bg-[#323236] text-white flex items-center gap-2 transition-all shadow-sm cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>New task</span>
+          </button>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          ROW 1: THREE SIGNATURE COGNIFY KPI BENTO CARDS
+          ========================================================================= */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* CARD 1: Active Projects (Vibrant Green Accent) */}
+        <div className="bg-white rounded-[28px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.025)] flex flex-col justify-between min-h-[196px]">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-full bg-[#1ec94c] ring-4 ring-[#1ec94c]/20 flex items-center justify-center text-white shrink-0">
+                <Briefcase className="w-5 h-5" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
-                {theme.companyName || 'Open Technology PLC'} — Executive Overview
-              </h2>
-              <p className="text-slate-200 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed opacity-90">
-                Consolidated operations across SMM target execution (1,080 quota), multi-platform advertising, and dual-stream financials.
-              </p>
+              <div className="text-sm font-medium text-[#1d1d1f] leading-snug">
+                <div>Active</div>
+                <div>Projects & Accounts</div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setCurrentModule('finance')}
-                className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white text-slate-900 hover:bg-slate-100 transition-colors shadow-xs"
-              >
-                Financial Ledger
-              </button>
-              <button
-                onClick={() => setCurrentModule('smm')}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-md"
-                style={{
-                  backgroundColor: theme.accentColor,
-                  color: '#1a1a1a',
-                  boxShadow: `0 4px 12px ${theme.accentColor}40`
-                }}
-              >
-                SMM 1,080 Hub
-              </button>
+            <button
+              onClick={() => setCurrentModule('projects')}
+              className="w-10 h-10 rounded-full bg-[#f4f5f7] hover:bg-[#e5e7ec] flex items-center justify-center text-[#1d1d1f] transition-colors cursor-pointer"
+              title="Open Projects & Operations"
+            >
+              <ArrowUpRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="my-4 flex items-baseline gap-2">
+            <span className="text-4xl sm:text-[42px] font-normal tracking-tight text-[#1d1d1f] leading-none">
+              {projectMetrics.activeCount}
+            </span>
+            <span className="text-xs font-semibold text-[#1ec94c] -translate-y-3 inline-flex items-center">
+              ↑ 18%
+            </span>
+            <span className="text-xs text-slate-400 ml-1">
+              ({activeClientsCount} active clients)
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-2 text-xs text-[#86868b]">
+              <InfinityIcon className="w-4 h-4 text-slate-400" />
+              <span>Dynamic of changes</span>
             </div>
+            <span className="px-3.5 py-1.5 rounded-full bg-[#f4f5f7] text-[#1d1d1f] text-xs font-medium">
+              Monthly
+            </span>
           </div>
         </div>
-      ) : (
-        <div className="bg-white px-5 py-3 rounded-xl border border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span
-              className="w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: theme.accentColor }}
-            />
-            <span className="font-bold text-slate-900 text-xs">
-              {theme.companyName} Operations Dashboard
-            </span>
-            <span className="text-slate-400 text-xs">·</span>
-            <span className="text-slate-500 text-xs">Minimalist High-Signal View</span>
-          </div>
-          <div className="flex gap-2 text-xs">
-            <button
-              onClick={() => setCurrentModule('finance')}
-              className="font-semibold text-slate-700 hover:text-slate-900"
-            >
-              Finance →
-            </button>
+
+        {/* CARD 2: Total Tasks & SMM Deliverables (Vibrant Blue Accent) */}
+        <div className="bg-white rounded-[28px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.025)] flex flex-col justify-between min-h-[196px]">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-full bg-[#1d7dfa] ring-4 ring-[#1d7dfa]/20 flex items-center justify-center text-white shrink-0">
+                <ListTodo className="w-5 h-5" />
+              </div>
+              <div className="text-sm font-medium text-[#1d1d1f] leading-snug">
+                <div>Total</div>
+                <div>SMM & Agency Tasks</div>
+              </div>
+            </div>
+
             <button
               onClick={() => setCurrentModule('smm')}
-              className="font-bold"
-              style={{ color: theme.accentColor }}
+              className="w-10 h-10 rounded-full bg-[#f4f5f7] hover:bg-[#e5e7ec] flex items-center justify-center text-[#1d1d1f] transition-colors cursor-pointer"
+              title="Open Social Media Hub"
             >
-              SMM Hub →
+              <ArrowUpRight className="w-4 h-4" />
             </button>
           </div>
-        </div>
-      )}
 
-      {/* 10 Real-Time KPI Cards (All dynamically computed) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        {/* 1. Active Clients */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Active Clients</span>
-            <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
-              <Users className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl sm:text-2xl font-bold text-slate-900">{activeClientsCount}</div>
-          <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
-            <span className="text-emerald-600 font-medium">+2 this quarter</span>
-          </div>
-        </div>
-
-        {/* 2. Active Projects */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Active Projects</span>
-            <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
-              <Briefcase className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl sm:text-2xl font-bold text-slate-900">{projectMetrics.activeCount}</div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            Total {projects.length} in pipeline
-          </div>
-        </div>
-
-        {/* 3. Monthly Revenue */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Total Revenue</span>
-            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
-              <DollarSign className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl sm:text-2xl font-bold text-slate-900">
-            {financialBalances.totalIncome.toLocaleString()} <span className="text-xs font-normal text-slate-500">ETB</span>
-          </div>
-          <div className="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" />
-            Bank & Cash Inflow
-          </div>
-        </div>
-
-        {/* 4. Monthly Expenses */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Total Expenses</span>
-            <div className="p-1.5 rounded-lg bg-rose-50 text-rose-600">
-              <TrendingDown className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl sm:text-2xl font-bold text-slate-900">
-            {financialBalances.totalExpense.toLocaleString()} <span className="text-xs font-normal text-slate-500">ETB</span>
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            Production & Overhead
-          </div>
-        </div>
-
-        {/* 5. Net Profit */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Net Profit</span>
-            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl sm:text-2xl font-bold text-emerald-600">
-            {financialBalances.netProfit.toLocaleString()} <span className="text-xs font-normal text-slate-500">ETB</span>
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            {financialBalances.profitMargin}% margin
-          </div>
-        </div>
-
-        {/* 6. Outstanding Receivables */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Receivables</span>
-            <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
-              <AlertCircle className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl sm:text-2xl font-bold text-amber-700">
-            {accountsReceivable.toLocaleString()} <span className="text-xs font-normal text-slate-500">ETB</span>
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1">Pending client invoices</div>
-        </div>
-
-        {/* 7. Total Ad Spend */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Total Ad Spend</span>
-            <div className="p-1.5 rounded-lg bg-purple-50 text-purple-600">
-              <Megaphone className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl sm:text-2xl font-bold text-slate-900">
-            {totalAdSpend.toLocaleString()} <span className="text-xs font-normal text-slate-500">ETB</span>
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1">Meta, Google, TikTok Ads</div>
-        </div>
-
-        {/* 8. SMM Posts Published */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">SMM Published</span>
-            <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
-              <Share2 className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl sm:text-2xl font-bold text-blue-600">
-            {smmMetrics.totalPublished} <span className="text-xs font-normal text-slate-400">/ 1,080</span>
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1">{smmMetrics.annualFulfillmentRate}% fulfilled</div>
-        </div>
-
-        {/* 9. Team Productivity */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Productivity</span>
-            <div className="p-1.5 rounded-lg bg-teal-50 text-teal-600">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl sm:text-2xl font-bold text-slate-900">{avgTeamCapacity}%</div>
-          <div className="text-[11px] text-emerald-600 font-medium mt-1">Across 7 departments</div>
-        </div>
-
-        {/* 10. Project Completion Rate */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Completion</span>
-            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl sm:text-2xl font-bold text-slate-900">{projectMetrics.completionRate}%</div>
-          <div className="text-[11px] text-slate-500 mt-1">On-time delivery</div>
-        </div>
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue vs Expenses Performance Chart */}
-        <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">Revenue vs. Expenses Trend</h3>
-              <p className="text-xs text-slate-500">Monthly agency financial performance (ETB)</p>
-            </div>
-            <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">
-              Consolidated Ledger
+          <div className="my-4 flex items-baseline gap-2">
+            <span className="text-4xl sm:text-[42px] font-normal tracking-tight text-[#1d1d1f] leading-none">
+              {totalDeliverables}
+            </span>
+            <span className="text-xs font-semibold text-[#1ec94c] -translate-y-3 inline-flex items-center">
+              ↑ 23%
+            </span>
+            <span className="text-xs text-slate-400 ml-1">
+              ({smmMetrics.totalPublished} published)
             </span>
           </div>
 
-          <div className="h-64 sm:h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyFinancialData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis
-                  stroke="#94a3b8"
-                  fontSize={11}
-                  tickLine={false}
-                  tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
-                />
-                <Tooltip
-                  formatter={(val: any) => [`${Number(val).toLocaleString()} ETB`, '']}
-                  contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
-                />
-                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                <Bar dataKey="revenue" name="Total Revenue" fill={theme.accentColor} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expenses" name="Total Expenses" fill={theme.primaryColor} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-2 text-xs text-[#86868b]">
+              <InfinityIcon className="w-4 h-4 text-slate-400" />
+              <span>Dynamic of changes</span>
+            </div>
+            <span className="px-3.5 py-1.5 rounded-full bg-[#f4f5f7] text-[#1d1d1f] text-xs font-medium">
+              Monthly
+            </span>
           </div>
         </div>
 
-        {/* Project Status Breakdown */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-bold text-slate-900">Project Operations</h3>
-              <span className="text-xs text-blue-600 font-medium">{projects.length} Total</span>
+        {/* CARD 3: Team Members & Customers (Vibrant Pink Accent) */}
+        <div className="bg-white rounded-[28px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.025)] flex flex-col justify-between min-h-[196px]">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-full bg-[#f73b9b] ring-4 ring-[#f73b9b]/20 flex items-center justify-center text-white shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="text-sm font-medium text-[#1d1d1f] leading-snug">
+                <div>Team</div>
+                <div>Members & Clients</div>
+              </div>
             </div>
-            <p className="text-xs text-slate-500 mb-4">Distribution by current workflow status</p>
 
-            <div className="h-48 w-full flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={projectStatusCounts}
-                    innerRadius={50}
-                    outerRadius={75}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {projectStatusCounts.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            <button
+              onClick={() => setCurrentModule('hr')}
+              className="w-10 h-10 rounded-full bg-[#f4f5f7] hover:bg-[#e5e7ec] flex items-center justify-center text-[#1d1d1f] transition-colors cursor-pointer"
+              title="Open HR & Team Directory"
+            >
+              <ArrowUpRight className="w-4 h-4" />
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
-            {projectStatusCounts.map((item) => (
-              <div key={item.name} className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-slate-600 text-[11px] truncate">{item.name}:</span>
-                <span className="font-bold text-slate-900 text-[11px]">{item.value}</span>
-              </div>
-            ))}
+          <div className="my-4 flex items-baseline gap-2">
+            <span className="text-4xl sm:text-[42px] font-normal tracking-tight text-[#1d1d1f] leading-none">
+              {employees.length + clients.length}
+            </span>
+            <span className="text-xs text-slate-400 ml-1">
+              ({employees.length} staff · {clients.length} clients)
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <button
+              onClick={() => setCurrentModule('crm')}
+              className="text-xs text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
+            >
+              Manage Customers
+            </button>
+
+            <div className="flex items-center">
+              <button
+                onClick={() => setCurrentModule('hr')}
+                className="w-8 h-8 rounded-full bg-[#f4f5f7] hover:bg-[#e5e7ec] flex items-center justify-center text-[#1d1d1f] text-xs font-medium z-10 cursor-pointer"
+                title="Add or view team"
+              >
+                +
+              </button>
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+                alt="Team member"
+                className="w-8 h-8 rounded-full object-cover ring-2 ring-white -ml-2 z-20"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80"
+                alt="Team member"
+                className="w-8 h-8 rounded-full object-cover ring-2 ring-white -ml-2 z-30"
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Operational Highlights: Recent Transactions & Pending Approvals */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Ledger Transactions */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
+      {/* =========================================================================
+          ROW 2: THREE SIGNATURE VISUAL ANALYTICS BENTO CARDS
+          ========================================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* BOTTOM-LEFT CARD: Task Progress with 3 Overlapping Striped 3D Blocks */}
+        <div className="bg-white rounded-[28px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.025)] flex flex-col justify-between">
+          <div className="grid grid-cols-12 gap-2">
+            {/* Left Side: Title + Big Percentage */}
+            <div className="col-span-7 flex flex-col justify-between">
+              <div>
+                <h3 className="text-base font-medium text-[#1d1d1f]">Task Progress</h3>
+                <div className="text-4xl sm:text-[44px] font-normal tracking-tight text-[#1d1d1f] mt-4 leading-none">
+                  {avgTeamCapacity}%
+                </div>
+                <p className="text-xs text-[#86868b] mt-2">Average agency progress</p>
+              </div>
+            </div>
+
+            {/* Right Side: 3 Department Breakdowns */}
+            <div className="col-span-5 space-y-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-[#f73b9b] flex items-center justify-center text-white text-[10px]">
+                    <Layers className="w-3 h-3" />
+                  </span>
+                  <span className="text-xs text-[#86868b]">Creative & SMM</span>
+                </div>
+                <div className="text-base font-medium text-[#1d1d1f] mt-0.5 pl-8">87%</div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-[#1d7dfa] flex items-center justify-center text-white text-[10px]">
+                    <Sparkles className="w-3 h-3" />
+                  </span>
+                  <span className="text-xs text-[#86868b]">Ad Campaigns</span>
+                </div>
+                <div className="text-base font-medium text-[#1d1d1f] mt-0.5 pl-8">64%</div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-[#1ec94c] flex items-center justify-center text-white text-[10px]">
+                    <CheckCircle2 className="w-3 h-3" />
+                  </span>
+                  <span className="text-xs text-[#86868b]">Production</span>
+                </div>
+                <div className="text-base font-medium text-[#1d1d1f] mt-0.5 pl-8">78%</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Signature 3 Overlapping Colorful Rounded Blocks with Diagonal Hatched Stripes */}
+          <div className="relative h-48 mt-4 flex items-end">
+            {/* Block 1: Pink (Left, Tallest) */}
+            <div
+              onClick={() => setCurrentModule('smm')}
+              className="w-[42%] h-44 rounded-[22px] bg-gradient-to-b from-[#ff4da6] to-[#f73b9b] p-2.5 flex flex-col justify-between shadow-md relative z-10 cursor-pointer transition-transform hover:-translate-y-1"
+            >
+              <span className="inline-flex self-start px-2.5 py-1 rounded-full bg-white/25 backdrop-blur-xs text-white text-[11px] font-medium">
+                {contentAssets.length || 205}
+              </span>
+              <div className="w-full h-[72%] rounded-[16px] cognify-stripes border border-white/30" />
+            </div>
+
+            {/* Block 2: Blue (Center, Overlapping) */}
+            <div
+              onClick={() => setCurrentModule('advertising')}
+              className="w-[38%] h-32 -ml-5 rounded-[22px] bg-gradient-to-b from-[#3894ff] to-[#1d7dfa] p-2.5 flex flex-col justify-between shadow-lg relative z-20 cursor-pointer transition-transform hover:-translate-y-1"
+            >
+              <span className="inline-flex self-start px-2.5 py-1 rounded-full bg-white/25 backdrop-blur-xs text-white text-[11px] font-medium">
+                {adCampaigns.length * 26 || 106}
+              </span>
+              <div className="w-full h-[46%] rounded-[14px] cognify-stripes border border-white/30" />
+            </div>
+
+            {/* Block 3: Green (Right, Overlapping) */}
+            <div
+              onClick={() => setCurrentModule('projects')}
+              className="w-[38%] h-36 -ml-5 rounded-[22px] bg-gradient-to-b from-[#2be05c] to-[#1ec94c] p-2.5 flex flex-col justify-between shadow-lg relative z-30 cursor-pointer transition-transform hover:-translate-y-1"
+            >
+              <span className="inline-flex self-start px-2.5 py-1 rounded-full bg-white/25 backdrop-blur-xs text-white text-[11px] font-medium">
+                {tasks.length * 24 || 168}
+              </span>
+              <div className="w-full h-[64%] rounded-[14px] cognify-stripes border border-white/30" />
+            </div>
+          </div>
+        </div>
+
+        {/* BOTTOM-CENTER CARD: Project Status with Multi-Segment Ring Gauge & Striped Bars */}
+        <div className="bg-white rounded-[28px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.025)] flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-medium text-[#1d1d1f]">Project Status</h3>
+
+            {/* Σ | % Segmented Pill Toggle */}
+            <div className="flex items-center bg-[#f4f5f7] p-1 rounded-full text-xs">
+              <button
+                onClick={() => setStatusMode('count')}
+                className={`w-7 h-7 rounded-full flex items-center justify-center font-serif font-semibold transition-all cursor-pointer ${
+                  statusMode === 'count' ? 'bg-white text-[#1d1d1f] shadow-2xs' : 'text-slate-500'
+                }`}
+                title="Show counts"
+              >
+                Σ
+              </button>
+              <button
+                onClick={() => setStatusMode('percent')}
+                className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold transition-all cursor-pointer ${
+                  statusMode === 'percent' ? 'bg-white text-[#1d1d1f] shadow-2xs' : 'text-slate-500'
+                }`}
+                title="Show percentages"
+              >
+                %
+              </button>
+            </div>
+          </div>
+
+          {/* Center Multi-Segment Ring Gauge */}
+          <div className="relative my-3 flex items-center justify-center">
+            <svg className="w-44 h-44 -rotate-90" viewBox="0 0 160 160">
+              {/* Background Track */}
+              <circle
+                cx="80"
+                cy="80"
+                r="60"
+                fill="none"
+                stroke="#f4f5f7"
+                strokeWidth="12"
+              />
+              {/* Green Segment (Completed / Active) */}
+              <circle
+                cx="80"
+                cy="80"
+                r="60"
+                fill="none"
+                stroke="#1ec94c"
+                strokeWidth="12"
+                strokeDasharray="150 377"
+                strokeDashoffset="0"
+                strokeLinecap="round"
+              />
+              {/* Pink Segment (In Progress) */}
+              <circle
+                cx="80"
+                cy="80"
+                r="60"
+                fill="none"
+                stroke="#f73b9b"
+                strokeWidth="12"
+                strokeDasharray="95 377"
+                strokeDashoffset="-162"
+                strokeLinecap="round"
+              />
+              {/* Blue Segment (Upcoming) */}
+              <circle
+                cx="80"
+                cy="80"
+                r="60"
+                fill="none"
+                stroke="#1d7dfa"
+                strokeWidth="12"
+                strokeDasharray="95 377"
+                strokeDashoffset="-270"
+                strokeLinecap="round"
+              />
+            </svg>
+
+            {/* Floating Callout Pill */}
+            <div className="absolute top-5 left-4 px-2.5 py-1 rounded-full bg-white shadow-md border border-slate-100 flex items-center gap-1.5 text-[11px] font-medium text-[#1d1d1f]">
+              <span className="w-2 h-2 rounded-full bg-[#1ec94c]" />
+              <span>
+                {statusMode === 'count'
+                  ? `${projects.length} (${projectMetrics.completionRate || 52}%)`
+                  : `${projectMetrics.completionRate || 52}%`}
+              </span>
+            </div>
+
+            {/* Center Metric Label */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+              <div className="text-3xl sm:text-4xl font-normal tracking-tight text-[#1d1d1f]">
+                {totalProjectsAndTasks}
+              </div>
+              <div className="text-xs text-[#86868b]">deliverables</div>
+            </div>
+          </div>
+
+          {/* 3 Status Rows with Striped Progress Bars */}
+          <div className="space-y-3 text-xs">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Dual-Stream Ledger Feed</h3>
-              <p className="text-xs text-slate-500">Latest Black Cash & White Bank entries</p>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[#86868b]">Completed</span>
+                <span className="font-medium text-[#1d1d1f]">
+                  {statusMode === 'count'
+                    ? `${completedCount}/${totalProjectsAndTasks}`
+                    : `${completedRatio}%`}
+                </span>
+              </div>
+              <div className="w-full h-2.5 rounded-full bg-[#f4f5f7] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[#1ec94c] cognify-stripes-strong"
+                  style={{ width: `${Math.max(25, completedRatio)}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[#86868b]">In progress</span>
+                <span className="font-medium text-[#1d1d1f]">
+                  {statusMode === 'count'
+                    ? `${inProgressCount}/${totalProjectsAndTasks}`
+                    : `${inProgressRatio}%`}
+                </span>
+              </div>
+              <div className="w-full h-2.5 rounded-full bg-[#f4f5f7] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[#f73b9b] cognify-stripes-strong"
+                  style={{ width: `${Math.max(18, inProgressRatio)}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[#86868b]">Upcoming & Review</span>
+                <span className="font-medium text-[#1d1d1f]">
+                  {statusMode === 'count'
+                    ? `${upcomingCount}/${totalProjectsAndTasks}`
+                    : `${upcomingRatio}%`}
+                </span>
+              </div>
+              <div className="w-full h-2.5 rounded-full bg-[#f4f5f7] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[#1d7dfa] cognify-stripes-strong"
+                  style={{ width: `${Math.max(32, upcomingRatio)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* BOTTOM-RIGHT CARD: Financial & Productivity Trend (Smooth Dual Spline Chart) */}
+        <div className="bg-white rounded-[28px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.025)] flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-medium text-[#1d1d1f]">Productivity & Cash Trend</h3>
+
+            <button
+              onClick={() => setTrendPeriod(trendPeriod === 'Daily' ? 'Monthly' : 'Daily')}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#f4f5f7] hover:bg-[#e5e7ec] text-xs font-medium text-[#1d1d1f] transition-colors cursor-pointer"
+            >
+              <Calendar className="w-3.5 h-3.5 text-slate-500" />
+              <span>{trendPeriod}</span>
+              <ChevronDown className="w-3 h-3 text-slate-500" />
+            </button>
+          </div>
+
+          {/* Inner Soft Gray Chart Box */}
+          <div className="bg-[#f8f9fb] rounded-[22px] p-4 my-3 flex flex-col justify-between">
+            {/* Floating Legend Pills */}
+            <div className="flex items-center justify-center gap-1.5 mb-2">
+              <div
+                className="px-2.5 py-1 rounded-full bg-[#1d1d1f] text-white text-[11px] font-medium flex items-center gap-1.5 shadow-2xs whitespace-nowrap"
+                title={`White Bank Balance: ${financialBalances.whiteBankBalance.toLocaleString()} ETB`}
+              >
+                <span className="w-2 h-2 rounded-full bg-[#1d7dfa]" />
+                <span>White Bank: {(financialBalances.whiteBankBalance / 1000).toFixed(0)}k ETB</span>
+              </div>
+              <div
+                className="px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-[11px] font-medium flex items-center gap-1.5 shadow-2xs border border-slate-100 whitespace-nowrap"
+                title={`Black Cash Safe: ${financialBalances.blackCashBalance.toLocaleString()} ETB`}
+              >
+                <span className="w-2 h-2 rounded-full bg-[#f73b9b]" />
+                <span>Black Cash: {(financialBalances.blackCashBalance / 1000).toFixed(0)}k ETB</span>
+              </div>
+            </div>
+
+            {/* Smooth Spline Wave Chart */}
+            <div className="h-32 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={waveChartData} margin={{ top: 10, right: 12, left: 12, bottom: 5 }}>
+                  <XAxis dataKey="day" hide />
+                  <YAxis domain={[20, 100]} hide />
+                  <Tooltip
+                    formatter={(val: any, name: any) => [
+                      name === 'revenueIndex' ? 'Revenue Stream Index: ' + val : 'Expense Stream Index: ' + val,
+                      ''
+                    ]}
+
+                    contentStyle={{
+                      backgroundColor: '#1d1d1f',
+                      borderRadius: '14px',
+                      border: 'none',
+                      color: '#fff',
+                      fontSize: '11px'
+                    }}
+                  />
+                  <ReferenceLine x={selectedDay} stroke="#d1d5db" strokeDasharray="2 2" />
+                  <Line
+                    type="monotone"
+                    dataKey="revenueIndex"
+                    stroke="#1d7dfa"
+                    strokeWidth={2.5}
+                    dot={(props: any) =>
+                      props.payload.day === selectedDay ? (
+                        <circle
+                          key={props.payload.day}
+                          cx={props.cx}
+                          cy={props.cy}
+                          r={5}
+                          fill="#1d7dfa"
+                          stroke="#ffffff"
+                          strokeWidth={2}
+                        />
+                      ) : (
+                        <g key={props.payload.day} />
+                      )
+                    }
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="spendIndex"
+                    stroke="#f73b9b"
+                    strokeWidth={2.5}
+                    dot={(props: any) =>
+                      props.payload.day === selectedDay ? (
+                        <circle
+                          key={props.payload.day}
+                          cx={props.cx}
+                          cy={props.cy}
+                          r={5}
+                          fill="#f73b9b"
+                          stroke="#ffffff"
+                          strokeWidth={2}
+                        />
+                      ) : (
+                        <g key={props.payload.day} />
+                      )
+                    }
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Day Selector Pills */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-200/50 text-xs">
+              {waveChartData.map((d) => {
+                const isSelected = d.day === selectedDay;
+                return (
+                  <button
+                    key={d.day}
+                    onClick={() => setSelectedDay(d.day)}
+                    className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-white text-[#1d1d1f] font-medium shadow-xs border border-slate-200/80'
+                        : 'text-[#86868b] hover:text-[#1d1d1f]'
+                    }`}
+                  >
+                    {d.day}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Bottom Dual Readouts */}
+          <div className="grid grid-cols-2 gap-4 pt-1">
+            <div>
+              <div className="text-xs text-[#86868b]">Total Revenue</div>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="text-xl sm:text-2xl font-normal tracking-tight text-[#1d1d1f]">
+                  {(financialBalances.totalIncome / 1000).toFixed(0)}k ETB
+                </span>
+                <span className="text-[11px] font-semibold text-[#1ec94c]">↑ 14%</span>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs text-[#86868b]">Net Profit</div>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="text-xl sm:text-2xl font-normal tracking-tight text-[#1d1d1f]">
+                  {(financialBalances.netProfit / 1000).toFixed(0)}k ETB
+                </span>
+                <span className="text-[11px] font-semibold text-[#f73b9b]">
+                  {financialBalances.profitMargin}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          ROW 3: EXECUTIVE OPERATIONAL FEED (Dual-Stream Ledger & Approvals in Cognify Style)
+          ========================================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Dual-Stream Ledger Feed */}
+        <div className="bg-white rounded-[28px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.025)]">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#1d7dfa]/10 text-[#1d7dfa] flex items-center justify-center">
+                <Wallet className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-base font-medium text-[#1d1d1f]">Dual-Stream Ledger Feed</h3>
+                <p className="text-xs text-[#86868b]">
+                  Latest Black Cash & White Bank entries · Receivables: {accountsReceivable.toLocaleString()} ETB
+                </p>
+              </div>
             </div>
             <button
               onClick={() => setCurrentModule('finance')}
-              className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1"
+              className="px-4 py-2 rounded-full bg-[#f4f5f7] hover:bg-[#e5e7ec] text-xs font-medium text-[#1d1d1f] flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              Full Ledger <ArrowRight className="w-3.5 h-3.5" />
+              <span>Full Ledger</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
           <div className="divide-y divide-slate-100">
             {transactions.slice(0, 4).map((tx) => (
-              <div key={tx.id} className="py-2.5 flex items-center justify-between">
+              <div key={tx.id} className="py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${
                       tx.type === 'Income'
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : 'bg-rose-50 text-rose-700'
+                        ? 'bg-[#1ec94c]/15 text-[#1ec94c]'
+                        : 'bg-[#f73b9b]/15 text-[#f73b9b]'
                     }`}
                   >
                     {tx.type === 'Income' ? '+' : '-'}
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-slate-800">{tx.details}</div>
-                    <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                    <div className="text-xs font-medium text-[#1d1d1f]">{tx.details}</div>
+                    <div className="text-[11px] text-[#86868b] flex items-center gap-1.5 mt-0.5">
                       <span>{tx.date}</span>
-                      <span>•</span>
-                      <span
-                        className={`font-medium ${
-                          tx.stream === 'Black Cash' ? 'text-amber-700' : 'text-blue-700'
-                        }`}
-                      >
-                        {tx.stream}
-                      </span>
+                      <span>·</span>
+                      <span className="font-medium text-[#1d1d1f]">{tx.stream}</span>
+                      <span>·</span>
+                      <span>{tx.category}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="text-right">
                   <div
-                    className={`text-xs font-bold ${
-                      tx.type === 'Income' ? 'text-emerald-600' : 'text-slate-900'
+                    className={`text-xs font-semibold ${
+                      tx.type === 'Income' ? 'text-[#1ec94c]' : 'text-[#1d1d1f]'
                     }`}
                   >
                     {(tx.cashAmount || tx.bankAmount).toLocaleString()} ETB
                   </div>
-                  <div className="text-[10px] text-slate-400 capitalize">{tx.category}</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Pending Approvals & SMM Quota Health */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+        {/* Pending Executive Approvals & Ad Spend Summary */}
+        <div className="bg-white rounded-[28px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.025)] flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Pending Approvals & QA</h3>
-                <p className="text-xs text-slate-500">Executive sign-offs requiring attention</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#f73b9b]/10 text-[#f73b9b] flex items-center justify-center">
+                  <ShieldAlert className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-medium text-[#1d1d1f]">Pending Approvals & QA</h3>
+                  <p className="text-xs text-[#86868b]">
+                    {pendingPOs.length + reviewContent.length} items awaiting executive sign-off · Ad Spend: {totalAdSpend.toLocaleString()} ETB
+                  </p>
+                </div>
               </div>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                {pendingPOs.length + reviewContent.length} pending
-              </span>
+
+              <button
+                onClick={() => setCurrentModule('reports')}
+                className="px-4 py-2 rounded-full bg-[#f4f5f7] hover:bg-[#e5e7ec] text-xs font-medium text-[#1d1d1f] transition-colors cursor-pointer"
+              >
+                Reports
+              </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {pendingPOs.map((po) => (
                 <div
                   key={po.id}
-                  className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between"
+                  className="p-3.5 rounded-2xl bg-[#f8f9fb] flex items-center justify-between"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <ShieldAlert className="w-4 h-4 text-amber-600" />
+                  <div className="flex items-center gap-3">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#f73b9b] shrink-0" />
                     <div>
-                      <div className="text-xs font-semibold text-slate-900">
+                      <div className="text-xs font-medium text-[#1d1d1f]">
                         Purchase Order #{po.poNumber}
                       </div>
-                      <div className="text-[11px] text-slate-500 truncate max-w-xs">
-                        {po.vendor} • {po.description}
+                      <div className="text-[11px] text-[#86868b] truncate max-w-xs">
+                        {po.vendor} · {po.description}
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xs font-bold text-slate-900">{po.totalAmount.toLocaleString()} ETB</div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-semibold text-[#1d1d1f]">
+                      {po.totalAmount.toLocaleString()} ETB
+                    </span>
                     <button
                       onClick={() => setCurrentModule('procurement')}
-                      className="text-[10px] text-blue-600 hover:underline font-semibold"
+                      className="px-3 py-1.5 rounded-full bg-white hover:bg-[#ebedf0] text-[11px] font-medium text-[#1d1d1f] shadow-2xs cursor-pointer"
                     >
                       Review PO
                     </button>
@@ -522,22 +796,22 @@ export const ExecutiveDashboard: React.FC = () => {
               {reviewContent.slice(0, 2).map((c) => (
                 <div
                   key={c.id}
-                  className="p-3 rounded-xl bg-purple-50/60 border border-purple-100 flex items-center justify-between"
+                  className="p-3.5 rounded-2xl bg-[#f8f9fb] flex items-center justify-between"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <Share2 className="w-4 h-4 text-purple-600" />
+                  <div className="flex items-center gap-3">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#1d7dfa] shrink-0" />
                     <div>
-                      <div className="text-xs font-semibold text-slate-900">
+                      <div className="text-xs font-medium text-[#1d1d1f]">
                         {c.platform} {c.format} Asset
                       </div>
-                      <div className="text-[11px] text-slate-500 truncate max-w-xs">
+                      <div className="text-[11px] text-[#86868b] truncate max-w-xs">
                         {c.topic}
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => setCurrentModule('smm')}
-                    className="text-xs font-semibold text-purple-700 bg-purple-100 px-2.5 py-1 rounded-lg hover:bg-purple-200"
+                    className="px-3.5 py-1.5 rounded-full bg-[#1d1d1f] text-white text-[11px] font-medium hover:bg-[#323236] cursor-pointer"
                   >
                     Approve
                   </button>
@@ -546,13 +820,13 @@ export const ExecutiveDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>SMM Quota Run-Rate: <strong>90 posts/month target</strong></span>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-[#86868b]">
+            <span>SMM Quota Run-Rate: <strong className="text-[#1d1d1f] font-medium">90 posts/month target</strong></span>
             <button
               onClick={() => setCurrentModule('reports')}
-              className="text-blue-600 font-semibold hover:underline"
+              className="text-[#1d1d1f] font-medium hover:underline cursor-pointer"
             >
-              Export Monthly Report
+              Export Monthly Report →
             </button>
           </div>
         </div>

@@ -20,7 +20,8 @@ import {
   BrandThemeConfig,
   SMMProductionStatus,
   AdPlatform,
-  FinancialStream
+  FinancialStream,
+  AuditLogEntry
 } from '../types';
 import {
   initialCurrentUser,
@@ -38,7 +39,8 @@ import {
   initialPurchaseOrders,
   initialAssets,
   initialLeaveRequests,
-  initialNotifications
+  initialNotifications,
+  initialAuditLogs
 } from '../services/mockData';
 import { db, testConnection, handleFirestoreError, OperationType } from '../services/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -157,6 +159,12 @@ interface ERPContextType {
   markNotificationAsRead: (id: string) => void;
   clearAllNotifications: () => void;
 
+  // Enterprise Activity & Audit Logs
+  auditLogs: AuditLogEntry[];
+  recordAuditLog: (
+    entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'actorName' | 'actorRole' | 'actorEmail'>
+  ) => void;
+
   // Operational Selectors & Approval Center
   getPendingApprovals: () => {
     pos: PurchaseOrder[];
@@ -267,6 +275,11 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return saved ? JSON.parse(saved) : initialNotifications;
   });
 
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => {
+    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_audit_logs`);
+    return saved ? JSON.parse(saved) : initialAuditLogs;
+  });
+
   // Appearance & Brand Studio State
   const [theme, setTheme] = useState<BrandThemeConfig>(() => {
     try {
@@ -323,6 +336,7 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_assets`, JSON.stringify(assets));
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_leaves`, JSON.stringify(leaveRequests));
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_notifications`, JSON.stringify(notifications));
+    localStorage.setItem(`${LOCAL_STORAGE_KEY}_audit_logs`, JSON.stringify(auditLogs));
   }, [
     settings,
     clients,
@@ -337,7 +351,8 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     purchaseOrders,
     assets,
     leaveRequests,
-    notifications
+    notifications,
+    auditLogs
   ]);
 
   // Navigation Helper
@@ -351,7 +366,18 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const updateSettings = (newSettings: Partial<SystemSettings>) => {
+    const prevCompany = settings.companyName;
     setSettings((prev) => ({ ...prev, ...newSettings }));
+    recordAuditLog({
+      domain: 'system',
+      action: 'UPDATE',
+      entityType: 'SystemSettings',
+      entityId: 'SYS-CFG',
+      summary: `Updated enterprise system configuration parameters`,
+      previousValue: `Company: ${prevCompany}, Dual-Stream Initials`,
+      newValue: `Updated system targets & thresholds`,
+      severity: 'elevated'
+    });
   };
 
   // Helper method: Sync individual doc to Firestore with graceful offline handling
@@ -364,6 +390,39 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  // Helper method: Record immutable Audit Log entry with active actor metadata
+  const recordAuditLog = (
+    entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'actorName' | 'actorRole' | 'actorEmail'>
+  ) => {
+    let activeActor = currentUser;
+    try {
+      const savedAuthProfile = localStorage.getItem('OTP_ERP_USER_PROFILE');
+      if (savedAuthProfile) {
+        const parsed = JSON.parse(savedAuthProfile);
+        if (parsed && parsed.fullName && parsed.role) {
+          activeActor = parsed;
+        }
+      }
+    } catch {
+      // Fallback to currentUser
+    }
+
+    const now = new Date();
+    const formattedTimestamp = `${now.toISOString().split('T')[0]} ${now.toTimeString().slice(0, 5)}`;
+
+    const newLog: AuditLogEntry = {
+      ...entry,
+      id: `aud-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+      timestamp: formattedTimestamp,
+      actorName: activeActor.fullName || 'Dawit Tadesse',
+      actorRole: activeActor.role || 'Super Administrator',
+      actorEmail: activeActor.email || 'dawit@otpmarketing.com'
+    };
+
+    setAuditLogs((prev) => [newLog, ...prev]);
+    syncDocToFirestore('audit_logs', newLog.id, newLog);
+  };
+
   // CLIENTS
   const addClient = (data: Omit<Client, 'id' | 'createdAt'>) => {
     const newClient: Client = {
@@ -373,9 +432,20 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setClients((prev) => [newClient, ...prev]);
     syncDocToFirestore('clients', newClient.id, newClient);
+    recordAuditLog({
+      domain: 'crm',
+      action: 'CREATE',
+      entityType: 'Client',
+      entityId: newClient.clientId,
+      summary: `Registered client organization "${newClient.companyName}" (${newClient.serviceType})`,
+      previousValue: 'Unregistered Prospect',
+      newValue: `Contract Value: ${newClient.contractValue.toLocaleString()} ETB (${newClient.status})`,
+      severity: 'normal'
+    });
   };
 
   const updateClient = (id: string, updates: Partial<Client>) => {
+    const existing = clients.find((c) => c.id === id);
     setClients((prev) =>
       prev.map((c) => {
         if (c.id === id) {
@@ -386,6 +456,18 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return c;
       })
     );
+    if (existing) {
+      recordAuditLog({
+        domain: 'crm',
+        action: 'UPDATE',
+        entityType: 'Client',
+        entityId: existing.clientId,
+        summary: `Updated client profile for "${existing.companyName}"`,
+        previousValue: `Status: ${existing.status}, Value: ${existing.contractValue.toLocaleString()} ETB`,
+        newValue: `Status: ${updates.status || existing.status}, Value: ${(updates.contractValue ?? existing.contractValue).toLocaleString()} ETB`,
+        severity: 'normal'
+      });
+    }
   };
 
   const deleteClient = (id: string) => {
@@ -611,7 +693,7 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const getCampaignsByPlatform = (platform: AdPlatform) =>
     adCampaigns.filter((c) => c.platform === platform);
 
-  // TRANSACTIONS
+    // TRANSACTIONS
   const addTransaction = (data: Omit<Transaction, 'id' | 'createdAt'>) => {
     const newTx: Transaction = {
       ...data,
@@ -620,6 +702,20 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setTransactions((prev) => [newTx, ...prev]);
     syncDocToFirestore('transactions', newTx.id, newTx);
+
+    const txAmount = newTx.stream === 'Black Cash' ? newTx.cashAmount : newTx.bankAmount;
+    recordAuditLog({
+      domain: 'finance',
+      action: 'CREATE',
+      entityType: 'Transaction',
+      entityId: newTx.transactionId,
+      summary: `Recorded ${newTx.type} in ${newTx.stream}: "${newTx.details}" (${txAmount.toLocaleString()} ETB)`,
+      previousValue: 'No Prior Entry',
+      newValue: `${newTx.type}: ${txAmount.toLocaleString()} ETB (${newTx.category})`,
+      stream: newTx.stream,
+      department: 'Finance',
+      severity: txAmount >= 100000 ? 'elevated' : 'normal'
+    });
   };
 
   const reverseTransaction = (id: string, reason: string) => {
@@ -652,6 +748,20 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     syncDocToFirestore('transactions', reversalTx.id, reversalTx);
 
+    const revAmount = original.cashAmount || original.bankAmount;
+    recordAuditLog({
+      domain: 'finance',
+      action: 'REVERSAL',
+      entityType: 'Transaction',
+      entityId: original.transactionId,
+      summary: `Executed non-destructive ledger reversal (${reversalTx.transactionId}) — Reason: "${reason}"`,
+      previousValue: `Valid ${original.type} (${revAmount.toLocaleString()} ETB)`,
+      newValue: `Reversed via ${reversalTx.transactionId} (${revAmount.toLocaleString()} ETB counter-entry)`,
+      stream: original.stream,
+      department: 'Finance',
+      severity: 'critical'
+    });
+
     const notif: NotificationItem = {
       id: `notif-${Date.now()}`,
       title: 'Financial Transaction Reversal',
@@ -676,6 +786,20 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setInvoices((prev) => [newInv, ...prev]);
     syncDocToFirestore('invoices', newInv.id, newInv);
+
+    const client = clients.find((c) => c.id === newInv.clientId);
+    recordAuditLog({
+      domain: 'finance',
+      action: 'CREATE',
+      entityType: 'Invoice',
+      entityId: newInv.invoiceNumber,
+      summary: `Generated client invoice ${newInv.invoiceNumber} for ${client?.companyName || 'Client'}`,
+      previousValue: 'Draft',
+      newValue: `Total: ${newInv.total.toLocaleString()} ETB (Status: ${newInv.status})`,
+      stream: 'White Bank',
+      department: 'Finance',
+      severity: 'normal'
+    });
   };
 
   const updateInvoice = (id: string, updates: Partial<Invoice>) => {
@@ -699,6 +823,8 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const inv = invoices.find((i) => i.id === invoiceId);
     if (!inv) return;
 
+    const prevBalance = inv.balance;
+    const prevStatus = inv.status;
     const newPaid = (inv.paidAmount || 0) + amount;
     const newBalance = Math.max(0, inv.total - newPaid);
     const newStatus = newBalance === 0 ? 'Paid' : 'Partially Paid';
@@ -710,6 +836,19 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
 
     const client = clients.find((c) => c.id === inv.clientId);
+    recordAuditLog({
+      domain: 'finance',
+      action: 'PAYMENT',
+      entityType: 'Invoice',
+      entityId: inv.invoiceNumber,
+      summary: `Recorded ${amount.toLocaleString()} ETB payment for Invoice ${inv.invoiceNumber} (${client?.companyName || 'Client'}) via ${stream}`,
+      previousValue: `Balance: ${prevBalance.toLocaleString()} ETB (${prevStatus})`,
+      newValue: `Balance: ${newBalance.toLocaleString()} ETB (${newStatus})`,
+      stream,
+      department: 'Finance',
+      severity: 'elevated'
+    });
+
     addTransaction({
       transactionId: `TX-PAY-${Math.floor(1000 + Math.random() * 9000)}`,
       date: new Date().toISOString().split('T')[0],
@@ -734,9 +873,22 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setEmployees((prev) => [...prev, newEmp]);
     syncDocToFirestore('employees', newEmp.id, newEmp);
+
+    recordAuditLog({
+      domain: 'hr',
+      action: 'CREATE',
+      entityType: 'Employee',
+      entityId: newEmp.employeeId,
+      summary: `Onboarded new team member ${newEmp.fullName} as ${newEmp.position} (${newEmp.department})`,
+      previousValue: 'Candidate / Unregistered',
+      newValue: `Status: ${newEmp.status} • Capacity: ${newEmp.workloadCapacity}%`,
+      department: newEmp.department,
+      severity: 'normal'
+    });
   };
 
   const updateEmployee = (id: string, updates: Partial<Employee>) => {
+    const existing = employees.find((e) => e.id === id);
     setEmployees((prev) =>
       prev.map((e) => {
         if (e.id === id) {
@@ -747,6 +899,22 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return e;
       })
     );
+
+    if (existing) {
+      const prevDesc = `Status: ${existing.status}, Capacity: ${existing.workloadCapacity}%, Role: ${existing.position}`;
+      const nextDesc = `Status: ${updates.status || existing.status}, Capacity: ${updates.workloadCapacity ?? existing.workloadCapacity}%, Role: ${updates.position || existing.position}`;
+      recordAuditLog({
+        domain: 'hr',
+        action: 'UPDATE',
+        entityType: 'Employee',
+        entityId: existing.employeeId,
+        summary: `Updated HR personnel record for ${existing.fullName} (${existing.department})`,
+        previousValue: prevDesc,
+        newValue: nextDesc,
+        department: updates.department || existing.department,
+        severity: updates.status && updates.status !== existing.status ? 'elevated' : 'normal'
+      });
+    }
   };
 
   const getEmployeeById = (id: string) => employees.find((e) => e.id === id);
@@ -760,9 +928,22 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setPurchaseOrders((prev) => [newPO, ...prev]);
     syncDocToFirestore('purchaseOrders', newPO.id, newPO);
+
+    recordAuditLog({
+      domain: 'procurement',
+      action: 'CREATE',
+      entityType: 'PurchaseOrder',
+      entityId: newPO.poNumber,
+      summary: `Submitted Purchase Order ${newPO.poNumber} to ${newPO.vendor} (${newPO.totalAmount.toLocaleString()} ETB)`,
+      previousValue: 'Draft Requisition',
+      newValue: `Status: ${newPO.status} (${newPO.totalAmount.toLocaleString()} ETB)`,
+      department: newPO.department,
+      severity: 'normal'
+    });
   };
 
   const updatePurchaseOrderStatus = (id: string, status: PurchaseOrder['status']) => {
+    const existing = purchaseOrders.find((p) => p.id === id);
     setPurchaseOrders((prev) =>
       prev.map((po) => {
         if (po.id !== id) return po;
@@ -787,6 +968,20 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return updated;
       })
     );
+
+    if (existing) {
+      recordAuditLog({
+        domain: 'procurement',
+        action: status === 'Approved' ? 'APPROVAL' : 'STATUS_CHANGE',
+        entityType: 'PurchaseOrder',
+        entityId: existing.poNumber,
+        summary: `Changed Purchase Order ${existing.poNumber} status to ${status}`,
+        previousValue: `Status: ${existing.status}`,
+        newValue: `Status: ${status}`,
+        department: existing.department,
+        severity: status === 'Approved' || status === 'Completed' ? 'elevated' : 'normal'
+      });
+    }
   };
 
   // ASSETS
@@ -821,9 +1016,23 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setLeaveRequests((prev) => [newLeave, ...prev]);
     syncDocToFirestore('leaveRequests', newLeave.id, newLeave);
+
+    const emp = employees.find((e) => e.fullName === newLeave.employeeName);
+    recordAuditLog({
+      domain: 'hr',
+      action: 'CREATE',
+      entityType: 'LeaveRequest',
+      entityId: newLeave.id.toUpperCase(),
+      summary: `Submitted ${newLeave.totalDays}-day ${newLeave.leaveType} leave request for ${newLeave.employeeName}`,
+      previousValue: 'No Active Request',
+      newValue: `Status: ${newLeave.status} (${newLeave.startDate} → ${newLeave.endDate})`,
+      department: emp?.department || 'Administration',
+      severity: 'normal'
+    });
   };
 
   const updateLeaveRequestStatus = (id: string, status: LeaveRequest['status']) => {
+    const existing = leaveRequests.find((l) => l.id === id);
     setLeaveRequests((prev) =>
       prev.map((l) => {
         if (l.id === id) {
@@ -834,6 +1043,21 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return l;
       })
     );
+
+    if (existing) {
+      const emp = employees.find((e) => e.fullName === existing.employeeName);
+      recordAuditLog({
+        domain: 'hr',
+        action: 'APPROVAL',
+        entityType: 'LeaveRequest',
+        entityId: existing.id.toUpperCase(),
+        summary: `${status} ${existing.totalDays}-day ${existing.leaveType} leave request for ${existing.employeeName}`,
+        previousValue: `Status: ${existing.status}`,
+        newValue: `Status: ${status}`,
+        department: emp?.department || 'Administration',
+        severity: status === 'Rejected' ? 'elevated' : 'normal'
+      });
+    }
   };
 
   // NOTIFICATIONS
@@ -916,6 +1140,7 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setAssets(initialAssets);
     setLeaveRequests(initialLeaveRequests);
     setNotifications(initialNotifications);
+    setAuditLogs(initialAuditLogs);
   };
 
   return (
@@ -994,6 +1219,8 @@ export const ERPProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         notifications,
         markNotificationAsRead,
         clearAllNotifications,
+        auditLogs,
+        recordAuditLog,
         getPendingApprovals,
         financialBalances,
         smmMetrics,

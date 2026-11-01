@@ -5,9 +5,11 @@ import {
   calculateCampaignMetrics,
   calculateFinancialBalances,
   calculateReceivablesAndPayables,
-  calculateProjectProgress
+  calculateProjectProgress,
+  filterAuditLogs,
+  calculateAuditLogSummary
 } from './calculations';
-import { ContentAsset, Transaction, Invoice, Project } from '../types';
+import { ContentAsset, Transaction, Invoice, Project, AuditLogEntry } from '../types';
 
 test('SMM target calculations compute fulfillment and remaining quota correctly', () => {
   const assets: Partial<ContentAsset>[] = [
@@ -125,3 +127,73 @@ test('Project progress calculates completion rate and budgets', () => {
   assert.equal(res.totalSpent, 135000);
   assert.equal(res.completionRate, 33.3);
 });
+
+test('filterAuditLogs and calculateAuditLogSummary filter and aggregate Finance and HR logs accurately', () => {
+  const sampleLogs: AuditLogEntry[] = [
+    {
+      id: 'a1',
+      timestamp: '2024-10-31 10:00:00',
+      actorName: 'Sara Alemayehu',
+      actorRole: 'Finance Manager',
+      actorEmail: 'sara@opentechplc.com',
+      domain: 'finance',
+      action: 'REVERSAL',
+      entityType: 'Transaction',
+      entityId: 'TX-101',
+      summary: 'Reversed duplicate cash voucher',
+      streamOrDepartment: 'Black Cash',
+      severity: 'critical'
+    },
+    {
+      id: 'a2',
+      timestamp: '2024-10-31 11:00:00',
+      actorName: 'Meron Teshome',
+      actorRole: 'HR Manager',
+      actorEmail: 'meron@opentechplc.com',
+      domain: 'hr',
+      action: 'APPROVAL',
+      entityType: 'Leave Request',
+      entityId: 'LV-12',
+      summary: 'Approved annual leave for Selamawit',
+      streamOrDepartment: 'Creative & Design',
+      severity: 'normal'
+    },
+    {
+      id: 'a3',
+      timestamp: '2024-10-31 12:00:00',
+      actorName: 'Sara Alemayehu',
+      actorRole: 'Finance Manager',
+      actorEmail: 'sara@opentechplc.com',
+      domain: 'finance',
+      action: 'PAYMENT',
+      entityType: 'Invoice',
+      entityId: 'INV-88',
+      summary: 'Recorded invoice payment from Telebirr',
+      streamOrDepartment: 'White Bank',
+      severity: 'elevated'
+    }
+  ];
+
+  const summary = calculateAuditLogSummary(sampleLogs);
+  assert.equal(summary.totalEvents, 3);
+  assert.equal(summary.financeEvents, 2);
+  assert.equal(summary.hrEvents, 1);
+  assert.equal(summary.criticalOrElevatedEvents, 2);
+  assert.equal(summary.uniqueActors, 2);
+
+  const financeOnly = filterAuditLogs(sampleLogs, { domain: 'finance' });
+  assert.equal(financeOnly.length, 2);
+
+  const blackCashReversals = filterAuditLogs(sampleLogs, {
+    domain: 'finance',
+    action: 'REVERSAL',
+    streamOrDepartment: 'Black Cash'
+  });
+  assert.equal(blackCashReversals.length, 1);
+  assert.equal(blackCashReversals[0].entityId, 'TX-101');
+
+  const searchResult = filterAuditLogs(sampleLogs, { searchQuery: 'selamawit' });
+  assert.equal(searchResult.length, 1);
+  assert.equal(searchResult[0].domain, 'hr');
+});
+

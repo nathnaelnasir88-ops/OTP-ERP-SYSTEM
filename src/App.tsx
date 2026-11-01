@@ -29,11 +29,11 @@ const MainContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#2c2c2c] flex flex-col items-center justify-center p-4 text-white">
-        <div className="w-12 h-12 rounded-2xl bg-[#545454] border-2 border-[#feb913] text-[#feb913] flex items-center justify-center font-bold text-lg tracking-wider mb-4 shadow-lg shadow-[#feb913]/20 animate-pulse">
+      <div className="min-h-screen bg-[#e4e7ec] flex flex-col items-center justify-center p-4 text-[#1d1d1f]">
+        <div className="w-12 h-12 rounded-2xl bg-[#1d1d1f] text-white flex items-center justify-center font-bold text-lg tracking-wider mb-4 shadow-lg animate-pulse">
           OTP
         </div>
-        <div className="text-sm font-semibold text-slate-200">Authenticating Open Technology PLC session...</div>
+        <div className="text-sm font-medium text-slate-600">Authenticating Open Technology PLC session...</div>
       </div>
     );
   }
@@ -43,15 +43,15 @@ const MainContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-900 font-sans antialiased flex">
-      {/* Sidebar Navigation */}
+    <div className="min-h-screen bg-[#e4e7ec] text-[#1d1d1f] font-sans antialiased p-2 sm:p-4 lg:p-6 flex flex-col">
+      {/* Slide-over Sidebar Drawer (Accessible via Menu & preserved in DOM for RBAC navigation) */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Main Content Area */}
-      <div className="flex-1 lg:pl-72 flex flex-col min-w-0 min-h-screen">
+      {/* Elevated Cognify-Style Bento App Shell */}
+      <div className="flex-1 bg-[#f5f6f8] rounded-[28px] sm:rounded-[38px] shadow-[0_20px_60px_rgba(0,0,0,0.06)] border border-white/90 flex flex-col min-w-0 max-w-[1480px] w-full mx-auto overflow-hidden">
         <TopNavbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 px-4 sm:px-7 lg:px-9 pb-8 pt-2 w-full mx-auto">
           <ProtectedRoute module={currentModule}>
             {currentModule === 'dashboard' && <ExecutiveDashboard />}
             {currentModule === 'crm' && <CRMSalesModule />}

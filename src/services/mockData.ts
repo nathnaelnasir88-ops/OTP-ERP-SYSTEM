@@ -1,5 +1,6 @@
 import {
   UserProfile,
+  ManagedUserAccount,
   Client,
   Lead,
   Project,
@@ -14,7 +15,8 @@ import {
   LeaveRequest,
   NotificationItem,
   SystemSettings,
-  BrandThemeConfig
+  BrandThemeConfig,
+  AuditLogEntry
 } from '../types';
 
 export const defaultBrandTheme: BrandThemeConfig = {
@@ -44,12 +46,117 @@ export const initialSettings: SystemSettings = {
 export const initialCurrentUser: UserProfile = {
   id: 'usr-1',
   email: 'nathnaelnasir88@gmail.com',
+  username: 'admin',
   fullName: 'Nathnael Nasir',
-  role: 'Managing Director',
+  role: 'Super Administrator',
   department: 'Management',
+  position: 'Chief Executive & System Administrator',
+  phone: '+251 911 234567',
   status: 'Active',
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
 };
+
+export const initialManagedAccounts: ManagedUserAccount[] = [
+  {
+    id: 'usr-1',
+    fullName: 'Nathnael Nasir',
+    username: 'admin',
+    email: 'nathnaelnasir88@gmail.com',
+    password: 'otpadmin2024',
+    role: 'Super Administrator',
+    department: 'Management',
+    position: 'Chief Executive & System Administrator',
+    phone: '+251 911 234567',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    status: 'Active',
+    createdAt: '2024-01-01T00:00:00.000Z'
+  },
+  {
+    id: 'usr-2',
+    fullName: 'Sara Alemayehu',
+    username: 'sara.finance',
+    email: 'sara.a@opentechplc.com',
+    password: 'finance2024',
+    role: 'Finance Manager',
+    department: 'Finance',
+    position: 'Head of Finance & Accounting',
+    phone: '+251 912 345678',
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    status: 'Active',
+    createdAt: '2024-01-10T00:00:00.000Z'
+  },
+  {
+    id: 'usr-3',
+    fullName: 'Dawit Tadesse',
+    username: 'dawit.mkt',
+    email: 'dawit.t@opentechplc.com',
+    password: 'marketing2024',
+    role: 'Marketing Manager',
+    department: 'Marketing',
+    position: 'Lead Account Strategist',
+    phone: '+251 913 456789',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    status: 'Active',
+    createdAt: '2024-01-15T00:00:00.000Z'
+  },
+  {
+    id: 'usr-4',
+    fullName: 'Selamawit Kebede',
+    username: 'selam.design',
+    email: 'selam.k@opentechplc.com',
+    password: 'design2024',
+    role: 'Designer / Content Creator',
+    department: 'Creative & Design',
+    position: 'Senior Brand Designer',
+    phone: '+251 914 567890',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+    status: 'Active',
+    createdAt: '2024-02-01T00:00:00.000Z'
+  },
+  {
+    id: 'usr-5',
+    fullName: 'Biruk Hailu',
+    username: 'biruk.ads',
+    email: 'biruk.h@opentechplc.com',
+    password: 'media2024',
+    role: 'Media Buyer',
+    department: 'Advertising',
+    position: 'Senior Performance Media Buyer',
+    phone: '+251 915 678901',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    status: 'Active',
+    createdAt: '2024-02-15T00:00:00.000Z'
+  },
+  {
+    id: 'usr-6',
+    fullName: 'Meron Teshome',
+    username: 'meron.hr',
+    email: 'meron.t@opentechplc.com',
+    password: 'hr2024',
+    role: 'HR Manager',
+    department: 'Administration',
+    position: 'HR & People Operations Manager',
+    phone: '+251 916 789012',
+    avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
+    status: 'Active',
+    createdAt: '2024-03-01T00:00:00.000Z'
+  },
+  {
+    id: 'usr-7',
+    fullName: 'Abel Getachew',
+    username: 'abel.emp',
+    email: 'abel.g@opentechplc.com',
+    password: 'employee2024',
+    role: 'Employee',
+    department: 'Creative & Design',
+    position: 'Junior Graphic & Motion Specialist',
+    phone: '+251 917 890123',
+    avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
+    status: 'Active',
+    createdAt: '2024-03-15T00:00:00.000Z'
+  }
+];
+
 
 export const initialEmployees: Employee[] = [
   {
@@ -974,3 +1081,135 @@ export const initialNotifications: NotificationItem[] = [
     linkModule: 'finance'
   }
 ];
+
+export const initialAuditLogs: AuditLogEntry[] = [
+  {
+    id: 'aud-1',
+    timestamp: '2024-10-31 16:42:10',
+    actorName: 'Sara Alemayehu',
+    actorRole: 'Finance Manager',
+    actorEmail: 'sara.a@opentechplc.com',
+    domain: 'finance',
+    action: 'PAYMENT',
+    entityType: 'Invoice',
+    entityId: 'INV-2024-089',
+    summary: 'Recorded client payment for Telebirr Q4 Digital Retainer',
+    previousValue: 'Balance: 1,400,000 ETB (Sent)',
+    newValue: 'Paid: +1,400,000 ETB → Balance: 0 ETB (Paid)',
+    streamOrDepartment: 'White Bank',
+    severity: 'elevated'
+  },
+  {
+    id: 'aud-2',
+    timestamp: '2024-10-31 15:18:04',
+    actorName: 'Meron Teshome',
+    actorRole: 'HR Manager',
+    actorEmail: 'meron.t@opentechplc.com',
+    domain: 'hr',
+    action: 'APPROVAL',
+    entityType: 'Leave Request',
+    entityId: 'LV-2024-01',
+    summary: 'Approved 5-day Annual Leave for Selamawit Kebede',
+    previousValue: 'Status: Pending',
+    newValue: 'Status: Approved (Nov 12 – Nov 18)',
+    streamOrDepartment: 'Creative & Design',
+    severity: 'normal'
+  },
+  {
+    id: 'aud-3',
+    timestamp: '2024-10-31 14:05:22',
+    actorName: 'Sara Alemayehu',
+    actorRole: 'Finance Manager',
+    actorEmail: 'sara.a@opentechplc.com',
+    domain: 'finance',
+    action: 'CREATE',
+    entityType: 'Transaction',
+    entityId: 'TX-2024-1004',
+    summary: 'Logged field production petty cash disbursement for Kuriftu shoot',
+    previousValue: 'Black Cash Safe: 230,000 ETB',
+    newValue: 'Expense: -22,500 ETB → Safe: 207,500 ETB',
+    streamOrDepartment: 'Black Cash',
+    severity: 'normal'
+  },
+  {
+    id: 'aud-4',
+    timestamp: '2024-10-31 11:30:45',
+    actorName: 'Nathnael Nasir',
+    actorRole: 'Super Administrator',
+    actorEmail: 'nathnaelnasir88@gmail.com',
+    domain: 'hr',
+    action: 'CREATE',
+    entityType: 'Employee Account',
+    entityId: 'OTP-007',
+    summary: 'Provisioned corporate employee account and RBAC role for Abel Getachew',
+    previousValue: 'Unprovisioned',
+    newValue: 'Role: Employee · Username: abel.emp (Active)',
+    streamOrDepartment: 'Creative & Design',
+    severity: 'elevated'
+  },
+  {
+    id: 'aud-5',
+    timestamp: '2024-10-30 17:12:30',
+    actorName: 'Sara Alemayehu',
+    actorRole: 'Finance Manager',
+    actorEmail: 'sara.a@opentechplc.com',
+    domain: 'finance',
+    action: 'REVERSAL',
+    entityType: 'Transaction',
+    entityId: 'TX-2024-0998',
+    summary: 'Executed non-destructive ledger reversal for duplicate vendor receipt',
+    previousValue: 'Expense: -18,000 ETB (Original Entry)',
+    newValue: 'Reversal Offset: +18,000 ETB (Audit Locked)',
+    streamOrDepartment: 'White Bank',
+    severity: 'critical'
+  },
+  {
+    id: 'aud-6',
+    timestamp: '2024-10-30 13:50:19',
+    actorName: 'Meron Teshome',
+    actorRole: 'HR Manager',
+    actorEmail: 'meron.t@opentechplc.com',
+    domain: 'hr',
+    action: 'UPDATE',
+    entityType: 'Employee Workload',
+    entityId: 'OTP-004',
+    summary: 'Updated workload capacity allocation for Selamawit Kebede',
+    previousValue: 'Capacity: 75%',
+    newValue: 'Capacity: 90% (Q4 Campaign Sprint)',
+    streamOrDepartment: 'Creative & Design',
+    severity: 'normal'
+  },
+  {
+    id: 'aud-7',
+    timestamp: '2024-10-29 16:20:00',
+    actorName: 'Dawit Tadesse',
+    actorRole: 'Marketing Manager',
+    actorEmail: 'dawit.t@opentechplc.com',
+    domain: 'crm',
+    action: 'STATUS_CHANGE',
+    entityType: 'Lead Deal',
+    entityId: 'LD-102',
+    summary: 'Advanced Abyssinia Bank Digital Transformation lead stage',
+    previousValue: 'Stage: Proposal',
+    newValue: 'Stage: Negotiation (2,400,000 ETB)',
+    streamOrDepartment: 'Marketing',
+    severity: 'normal'
+  },
+  {
+    id: 'aud-8',
+    timestamp: '2024-10-29 10:14:11',
+    actorName: 'Biruk Hailu',
+    actorRole: 'Media Buyer',
+    actorEmail: 'biruk.h@opentechplc.com',
+    domain: 'advertising',
+    action: 'UPDATE',
+    entityType: 'Ad Campaign',
+    entityId: 'CMP-2024-01',
+    summary: 'Updated actual ad spend and conversion metrics for Telebirr Meta Ads',
+    previousValue: 'Spend: 240,000 ETB',
+    newValue: 'Spend: 285,000 ETB (ROAS: 4.9x)',
+    streamOrDepartment: 'Advertising',
+    severity: 'normal'
+  }
+];
+

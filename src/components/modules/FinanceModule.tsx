@@ -13,19 +13,28 @@ import {
   Receipt,
   Download,
   Filter,
-  CreditCard
+  CreditCard,
+  ShieldCheck,
+  Search,
+  Activity,
+  History,
+  ArrowRight
 } from 'lucide-react';
 import { useERP } from '../../context/ERPContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   Transaction,
   FinancialStream,
   TransactionType,
   ExpenseCategory,
-  Invoice
+  Invoice,
+  AuditActionType
 } from '../../types';
 import {
   calculateFinancialBalances,
-  calculateReceivablesAndPayables
+  calculateReceivablesAndPayables,
+  filterAuditLogs,
+  calculateAuditLogSummary
 } from '../../utils/calculations';
 
 export const FinanceModule: React.FC = () => {
@@ -39,11 +48,20 @@ export const FinanceModule: React.FC = () => {
     clients,
     projects,
     currentUser,
-    settings
+    settings,
+    auditLogs
   } = useERP();
+  const { userProfile } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<'ledger' | 'streams' | 'invoices'>('ledger');
+  const activeRole = userProfile?.role || currentUser.role;
+  const isSuperAdmin = activeRole === 'Super Administrator';
+
+  const [activeTab, setActiveTab] = useState<'ledger' | 'streams' | 'invoices' | 'audit'>('ledger');
   const [streamFilter, setStreamFilter] = useState<'All' | 'Black Cash' | 'White Bank'>('All');
+  const [auditScope, setAuditScope] = useState<'finance' | 'ALL'>('finance');
+  const [auditActionFilter, setAuditActionFilter] = useState<AuditActionType | 'ALL'>('ALL');
+  const [auditStreamFilter, setAuditStreamFilter] = useState<'All' | 'Black Cash' | 'White Bank'>('All');
+  const [auditSearch, setAuditSearch] = useState('');
   const [showAddTxModal, setShowAddTxModal] = useState(false);
   const [showAddInvoiceModal, setShowAddInvoiceModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState<Invoice | null>(null);
@@ -137,6 +155,57 @@ export const FinanceModule: React.FC = () => {
     setPaymentAmount(0);
   };
 
+  const auditSummary = calculateAuditLogSummary(auditLogs);
+  const filteredAuditLogs = filterAuditLogs(auditLogs, {
+    domain: auditScope,
+    action: auditActionFilter,
+    stream: auditStreamFilter,
+    searchQuery: auditSearch
+  });
+
+  const handleExportFinanceAuditCSV = () => {
+    const headers = [
+      'Timestamp',
+      'Actor Name',
+      'Actor Role',
+      'Actor Email',
+      'Module Domain',
+      'Action',
+      'Entity Type',
+      'Entity ID',
+      'Stream',
+      'Summary',
+      'Previous Value',
+      'New Value',
+      'Severity'
+    ];
+    const rows = filteredAuditLogs.map((log) => [
+      `"${log.timestamp}"`,
+      `"${log.actorName}"`,
+      `"${log.actorRole}"`,
+      `"${log.actorEmail}"`,
+      `"${log.domain}"`,
+      `"${log.action}"`,
+      `"${log.entityType}"`,
+      `"${log.entityId}"`,
+      `"${log.stream || '-'}"`,
+      `"${(log.summary || '').replace(/"/g, '""')}"`,
+      `"${(log.previousValue || '-').replace(/"/g, '""')}"`,
+      `"${(log.newValue || '-').replace(/"/g, '""')}"`,
+      `"${log.severity}"`
+    ]);
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `otp-finance-audit-log-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Financial Stream Header Banner */}
@@ -198,38 +267,58 @@ export const FinanceModule: React.FC = () => {
       </div>
 
       {/* Tabs & Top Controls */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+      <div className="bg-white p-4 rounded-[24px] border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-1.5 bg-[#f4f5f7] p-1.5 rounded-full">
           <button
             onClick={() => setActiveTab('ledger')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
               activeTab === 'ledger'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#1d1d1f] text-white shadow-sm'
+                : 'text-[#6e6e73] hover:text-[#1d1d1f]'
             }`}
           >
             Transaction Ledger ({transactions.length})
           </button>
           <button
             onClick={() => setActiveTab('streams')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
               activeTab === 'streams'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#1d1d1f] text-white shadow-sm'
+                : 'text-[#6e6e73] hover:text-[#1d1d1f]'
             }`}
           >
             Dual-Stream Comparative Breakdown
           </button>
           <button
             onClick={() => setActiveTab('invoices')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
               activeTab === 'invoices'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#1d1d1f] text-white shadow-sm'
+                : 'text-[#6e6e73] hover:text-[#1d1d1f]'
             }`}
           >
             Client Invoices ({invoices.length})
           </button>
+          {isSuperAdmin && (
+            <button
+              onClick={() => setActiveTab('audit')}
+              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activeTab === 'audit'
+                  ? 'bg-[#1d1d1f] text-white shadow-sm'
+                  : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-[#1ec94c]" />
+              <span>Activity & Audit Log</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  activeTab === 'audit' ? 'bg-white/20 text-white' : 'bg-white text-[#1d1d1f]'
+                }`}
+              >
+                {auditScope === 'finance' ? auditSummary.financeEvents : auditSummary.totalEvents}
+              </span>
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -516,6 +605,287 @@ export const FinanceModule: React.FC = () => {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: SUPER ADMIN ACTIVITY & AUDIT LOG */}
+      {activeTab === 'audit' && isSuperAdmin && (
+        <div className="space-y-5">
+          {/* Cognify Soft Bento Audit KPI Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="bg-white p-6 rounded-[28px] border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-[#1ec94c] flex items-center justify-center text-white shadow-[0_4px_14px_rgba(30,201,76,0.3)]">
+                    <History className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-semibold text-[#1d1d1f]">Finance Audit Events</div>
+                    <div className="text-[11px] text-[#86868b]">Dual-Stream & Invoice Mutations</div>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-[#f4f5f7] text-[#1d1d1f] text-[11px] font-semibold">
+                  Immutable
+                </span>
+              </div>
+              <div className="mt-4 flex items-baseline justify-between">
+                <div className="text-3xl font-bold text-[#1d1d1f] tracking-tight">
+                  {auditSummary.financeEvents}
+                </div>
+                <span className="text-xs font-medium text-[#1ec94c]">
+                  100% Actor Attribution
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-[28px] border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-[#f73b9b] flex items-center justify-center text-white shadow-[0_4px_14px_rgba(247,59,155,0.3)]">
+                    <RotateCcw className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-semibold text-[#1d1d1f]">Reversals & Criticals</div>
+                    <div className="text-[11px] text-[#86868b]">Counter-Entries & High-Value</div>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 text-[11px] font-semibold">
+                  {auditSummary.reversalsCount} Reversals
+                </span>
+              </div>
+              <div className="mt-4 flex items-baseline justify-between">
+                <div className="text-3xl font-bold text-[#1d1d1f] tracking-tight">
+                  {auditSummary.criticalEvents}
+                </div>
+                <span className="text-xs font-medium text-[#86868b]">
+                  Flagged for Super Admin review
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-[28px] border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-[#1d7dfa] flex items-center justify-center text-white shadow-[0_4px_14px_rgba(29,125,250,0.3)]">
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-semibold text-[#1d1d1f]">ERP-Wide Activity</div>
+                    <div className="text-[11px] text-[#86868b]">Finance, HR, CRM & Operations</div>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-[#f4f5f7] text-[#1d1d1f] text-[11px] font-semibold">
+                  {auditSummary.uniqueActors} Actors
+                </span>
+              </div>
+              <div className="mt-4 flex items-baseline justify-between">
+                <div className="text-3xl font-bold text-[#1d1d1f] tracking-tight">
+                  {auditSummary.totalEvents}
+                </div>
+                <span className="text-xs font-medium text-[#1d7dfa]">
+                  Real-time cross-module sync
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Audit Filter & Scope Controls */}
+          <div className="bg-white rounded-[28px] border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-[#1d1d1f]">
+                    Super Admin Financial & Cross-ERP Audit Trail
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#1d1d1f] text-white text-[10px] font-semibold">
+                    Super Admin Exclusive
+                  </span>
+                </div>
+                <p className="text-xs text-[#86868b] mt-0.5">
+                  Monitor who changed what, when, and inspect exact before-and-after state values across Finance and the ERP.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Scope Switcher */}
+                <div className="flex items-center bg-[#f4f5f7] p-1 rounded-full">
+                  <button
+                    type="button"
+                    onClick={() => setAuditScope('finance')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                      auditScope === 'finance'
+                        ? 'bg-[#1d1d1f] text-white shadow-xs'
+                        : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+                    }`}
+                  >
+                    Finance Only ({auditSummary.financeEvents})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAuditScope('ALL')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                      auditScope === 'ALL'
+                        ? 'bg-[#1d1d1f] text-white shadow-xs'
+                        : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+                    }`}
+                  >
+                    All ERP Modules ({auditSummary.totalEvents})
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleExportFinanceAuditCSV}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-[#f4f5f7] hover:bg-slate-200 text-[#1d1d1f] rounded-full text-xs font-semibold transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export Audit CSV</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Bar */}
+            <div className="px-5 py-3.5 bg-[#f8f9fb] border-b border-slate-100 flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[220px]">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={auditSearch}
+                  onChange={(e) => setAuditSearch(e.target.value)}
+                  placeholder="Search by actor name, role, TX/Invoice ID, or change details..."
+                  aria-label="Search finance audit log"
+                  className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-full text-xs text-slate-800 focus:outline-none focus:border-slate-400"
+                />
+              </div>
+
+              <select
+                value={auditActionFilter}
+                onChange={(e) => setAuditActionFilter(e.target.value as AuditActionType | 'ALL')}
+                aria-label="Filter by audit action type"
+                className="text-xs font-semibold bg-white border border-slate-200 rounded-full px-3.5 py-2 text-slate-700"
+              >
+                <option value="ALL">All Action Types</option>
+                <option value="CREATE">Created (CREATE)</option>
+                <option value="PAYMENT">Settlement (PAYMENT)</option>
+                <option value="REVERSAL">Reversal (REVERSAL)</option>
+                <option value="UPDATE">Modified (UPDATE)</option>
+                <option value="APPROVAL">Approval (APPROVAL)</option>
+                <option value="STATUS_CHANGE">Status Change</option>
+              </select>
+
+              <select
+                value={auditStreamFilter}
+                onChange={(e) => setAuditStreamFilter(e.target.value as any)}
+                aria-label="Filter audit by financial stream"
+                className="text-xs font-semibold bg-white border border-slate-200 rounded-full px-3.5 py-2 text-slate-700"
+              >
+                <option value="All">All Financial Streams</option>
+                <option value="White Bank">White Bank Stream</option>
+                <option value="Black Cash">Black Cash Stream</option>
+              </select>
+            </div>
+
+            {/* Audit Trail Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50/80 border-b border-slate-100 text-[#86868b] uppercase text-[10px] tracking-wider font-semibold">
+                  <tr>
+                    <th className="py-3.5 px-4">Timestamp</th>
+                    <th className="py-3.5 px-4">Actor (Who)</th>
+                    <th className="py-3.5 px-4">Module & Action</th>
+                    <th className="py-3.5 px-4">Target Entity</th>
+                    <th className="py-3.5 px-4">Activity Description (What)</th>
+                    <th className="py-3.5 px-4">State Diff (Before → After)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredAuditLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-10 text-center text-slate-400 text-xs">
+                        No audit log entries match the selected filters.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredAuditLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`w-2 h-2 rounded-full shrink-0 ${
+                                log.severity === 'critical'
+                                  ? 'bg-rose-500'
+                                  : log.severity === 'elevated'
+                                  ? 'bg-amber-500'
+                                  : 'bg-[#1ec94c]'
+                              }`}
+                              title={`Severity: ${log.severity}`}
+                            />
+                            <span className="font-mono text-[11px] text-slate-600">{log.timestamp}</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="font-bold text-[#1d1d1f]">{log.actorName}</div>
+                          <div className="text-[10px] text-[#86868b] flex items-center gap-1.5 mt-0.5">
+                            <span className="px-1.5 py-0.2 bg-[#f4f5f7] text-[#1d1d1f] rounded font-semibold">
+                              {log.actorRole}
+                            </span>
+                            <span>• {log.actorEmail}</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <span className="uppercase text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                              {log.domain}
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                log.action === 'REVERSAL'
+                                  ? 'bg-rose-100 text-rose-700'
+                                  : log.action === 'PAYMENT' || log.action === 'APPROVAL'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : log.action === 'CREATE'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}
+                            >
+                              {log.action}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="font-mono font-bold text-slate-800">{log.entityId}</div>
+                          <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+                            <span>{log.entityType}</span>
+                            {(log.stream || log.streamOrDepartment) && (
+                              <span
+                                className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
+                                  (log.stream || log.streamOrDepartment) === 'Black Cash'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : 'bg-blue-100 text-blue-800'
+                                }`}
+                              >
+                                {log.stream || log.streamOrDepartment}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 max-w-xs">
+                          <div className="font-semibold text-[#1d1d1f] leading-snug">{log.summary}</div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] bg-[#f8f9fb] px-2.5 py-1.5 rounded-xl border border-slate-100">
+                            <span className="text-slate-500 line-through">{log.previousValue || 'None'}</span>
+                            <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="font-semibold text-[#1d1d1f]">{log.newValue || 'Recorded'}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
