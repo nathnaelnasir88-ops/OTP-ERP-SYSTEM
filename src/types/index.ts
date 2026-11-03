@@ -12,6 +12,7 @@ export type UserRole =
 
 export type AppModule =
   | 'dashboard'
+  | 'messages'
   | 'crm'
   | 'projects'
   | 'smm'
@@ -398,9 +399,43 @@ export type LayoutDensity = 'compact' | 'comfortable' | 'spacious';
 export type BorderRadiusOption = 'sharp' | 'subtle' | 'modern' | 'rounded';
 export type SimplicityMode = 'clean' | 'balanced' | 'compact';
 
+export type EraSystemId =
+  | 'cognify-bento'
+  | 'cyberpunk-neon'
+  | 'classic-90s-erp'
+  | 'swiss-bauhaus'
+  | 'neo-brutalist'
+  | 'executive-luxury';
+
+export interface EraSystemDefinition {
+  id: EraSystemId;
+  name: string;
+  eraName: string;
+  tagline: string;
+  description: string;
+  primaryColor: string;
+  accentColor: string;
+  accentSecondary: string;
+  accentTertiary: string;
+  appBackground: string;
+  shellBackground: string;
+  cardBackground: string;
+  textColor: string;
+  mutedTextColor: string;
+  borderColor: string;
+  borderRadius: BorderRadiusOption;
+  borderRadiusValue: string;
+  shadowStyle: 'soft-bento' | 'neon-glow' | 'beveled-3d' | 'sharp-border' | 'hard-brutalist' | 'luxury-glass';
+  fontStyle: 'modern-sans' | 'tactical-mono' | 'system-90s' | 'swiss-editorial' | 'bold-brutalist' | 'executive-serif';
+  iconEmoji: string;
+}
+
 export interface BrandThemeConfig {
-  primaryColor: string; // Hex e.g. #545454
-  accentColor: string; // Hex e.g. #feb913
+  era: EraSystemId;
+  primaryColor: string; // Hex e.g. #1d1d1f
+  accentColor: string; // Hex e.g. #1ec94c
+  accentSecondary?: string;
+  accentTertiary?: string;
   sidebarTone: SidebarTone;
   logoStyle: LogoStyle;
   logoImageUrl?: string;
@@ -414,3 +449,141 @@ export interface BrandThemeConfig {
   highContrastTables: boolean;
   enableTransitions: boolean;
 }
+
+export type RewardMethodId =
+  | 'hybrid-productivity'
+  | 'time-based'
+  | 'milestone-streak'
+  | 'kpi-weighted';
+
+export interface RewardMethodDefinition {
+  id: RewardMethodId;
+  name: string;
+  badge: string;
+  shortFormula: string;
+  formulaSummary?: string;
+  shortLabel?: string;
+  description: string;
+  whyLogical: string;
+}
+
+export interface RewardConfig {
+  method: RewardMethodId;
+  pointsPerActiveHour: number;
+  pointsPerCompletedTask: number;
+  pointsPerApprovedContent: number;
+  dailyTargetMinutes: number;
+  dailyMilestoneBonus: number;
+  streakBonusPerDay: number;
+  idleTimeoutMinutes: number;
+  dailyMaxTimePoints: number;
+  minEfficiencyThreshold: number;
+  allowRedemptions: boolean;
+  updatedBy?: string;
+  updatedAt?: string;
+}
+
+export interface DailyTimePointEntry {
+  day?: string;
+  date?: string;
+  activeMinutes: number;
+  pauseMinutes: number;
+  pointsEarned?: number;
+  earnedPoints?: number;
+  tasksCompleted?: number;
+  deliverablesApproved?: number;
+}
+
+export interface UserTimeRewardRecord {
+  userId: string;
+  username?: string;
+  fullName: string;
+  role: UserRole;
+  department: Department;
+  avatarUrl?: string;
+  todayActiveMinutes: number;
+  todayPauseMinutes: number;
+  weeklyActiveMinutes: number;
+  totalActiveMinutes: number;
+  totalPauseMinutes: number;
+  tasksCompletedCount: number;
+  deliverablesApprovedCount: number;
+  streakDays: number;
+  manualBonusPoints: number;
+  redeemedPoints: number;
+  lastActiveTimestamp: string;
+  dailyHistory: DailyTimePointEntry[];
+}
+
+export interface RewardCatalogItem {
+  id: string;
+  title: string;
+  description: string;
+  pointsCost: number;
+  category: 'Cash Bonus' | 'Time Off' | 'Perks & Vouchers' | 'Career & Tech' | 'Perks & Gear' | 'Voucher';
+  badgeText?: string;
+  monetaryValueETB?: number;
+  iconName?: string;
+  available: boolean;
+}
+
+export interface RewardRedemption {
+  id: string;
+  userId: string;
+  userName: string;
+  userRole: UserRole;
+  rewardId: string;
+  rewardTitle: string;
+  pointsSpent: number;
+  monetaryValueETB?: number;
+  status: 'Pending Approval' | 'Approved' | 'Fulfilled' | 'Rejected';
+  requestedAt: string;
+  resolvedBy?: string;
+  processedBy?: string;
+}
+
+export type ChatChannelType = 'channel' | 'dm';
+
+export interface ChatChannel {
+  id: string;
+  name: string;
+  type: ChatChannelType;
+  description: string;
+  department?: Department | 'All Agency';
+  participantIds?: string[]; // Used for Direct Messages (dm)
+  isPrivate?: boolean;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface ChatAttachmentLink {
+  entityType: 'Project' | 'Task' | 'Invoice' | 'PurchaseOrder' | 'Campaign';
+  entityId: string;
+  title: string;
+  statusOrValue?: string;
+  targetModule: AppModule;
+}
+
+export interface ChatMessage {
+  id: string;
+  channelId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: UserRole;
+  senderDepartment?: Department;
+  senderAvatar?: string;
+  content: string;
+  timestamp: string;
+  createdAtMs: number;
+  priority?: 'Normal' | 'Urgent' | 'Approval Needed' | 'Announcement';
+  replyToMessageId?: string;
+  replyToSenderName?: string;
+  replyToSnippet?: string;
+  linkedEntity?: ChatAttachmentLink;
+  reactions?: Record<string, string[]>; // emoji -> array of userIds
+  isPinned?: boolean;
+  isEdited?: boolean;
+}
+
+
+

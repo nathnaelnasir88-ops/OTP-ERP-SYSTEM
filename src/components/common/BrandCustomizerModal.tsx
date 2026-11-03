@@ -12,9 +12,13 @@ import {
   Maximize2,
   Image,
   Eye,
-  CheckCircle2
+  CheckCircle2,
+  Zap,
+  ArrowRight,
+  Lock
 } from 'lucide-react';
 import { useERP } from '../../context/ERPContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   LogoStyle,
   SidebarTone,
@@ -23,10 +27,14 @@ import {
   SimplicityMode,
   BrandThemeConfig
 } from '../../types';
+import { ERA_LIST, getEraDefinition } from '../../utils/eraSystems';
 
 export const BrandCustomizerModal: React.FC = () => {
-  const { theme, updateTheme, resetTheme, isCustomizerOpen, setIsCustomizerOpen } = useERP();
-  const [activeTab, setActiveTab] = useState<'colors' | 'logo' | 'simplicity'>('colors');
+  const { theme, updateTheme, setEra, resetTheme, isCustomizerOpen, setIsCustomizerOpen, currentUser } = useERP();
+  const { userProfile } = useAuth();
+  const activeRole = userProfile?.role || currentUser?.role || 'Super Administrator';
+  const isSuperAdmin = activeRole === 'Super Administrator';
+  const [activeTab, setActiveTab] = useState<'eras' | 'colors' | 'logo' | 'simplicity'>('eras');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   if (!isCustomizerOpen) return null;
@@ -35,6 +43,8 @@ export const BrandCustomizerModal: React.FC = () => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2500);
   };
+
+  const activeEra = getEraDefinition(theme.era || 'cognify-bento');
 
   const colorPresets = [
     {
@@ -79,28 +89,27 @@ export const BrandCustomizerModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/60 backdrop-blur-xs">
-      <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-3">
             <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shadow-xs text-white"
+              className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-xs text-white text-base"
               style={{ backgroundColor: theme.primaryColor }}
             >
-              <Palette className="w-4 h-4" style={{ color: theme.accentColor }} />
+              <span>{activeEra.iconEmoji}</span>
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                Brand & UI Appearance Studio
+                Brand UI & Era Design Systems
                 <span
-                  className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider font-mono"
-                  style={{ backgroundColor: `${theme.accentColor}25`, color: '#7c5800' }}
+                  className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider font-mono bg-emerald-100 text-emerald-800"
                 >
-                  Full Control
+                  {activeEra.name}
                 </span>
               </h2>
               <p className="text-xs text-slate-500">
-                Customize colors, logo, typography, density, and interface simplicity in real-time.
+                Transform the entire ERP system across different design eras, or customize agency brand styling.
               </p>
             </div>
           </div>
@@ -114,7 +123,18 @@ export const BrandCustomizerModal: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-6 pt-3 border-b border-slate-200/80 bg-white flex gap-6 text-xs font-semibold">
+        <div className="px-6 pt-3 border-b border-slate-200/80 bg-white flex flex-wrap gap-4 sm:gap-6 text-xs font-semibold">
+          <button
+            onClick={() => setActiveTab('eras')}
+            className={`pb-2.5 flex items-center gap-2 border-b-2 transition-all ${
+              activeTab === 'eras'
+                ? 'border-slate-900 text-slate-900'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#1ec94c]" />
+            <span>Era Systems (All 6 Eras)</span>
+          </button>
           <button
             onClick={() => setActiveTab('colors')}
             className={`pb-2.5 flex items-center gap-2 border-b-2 transition-all ${
@@ -135,7 +155,7 @@ export const BrandCustomizerModal: React.FC = () => {
             }`}
           >
             <Image className="w-3.5 h-3.5" />
-            <span>Logo & Agency Identity</span>
+            <span>Logo & Identity</span>
           </button>
           <button
             onClick={() => setActiveTab('simplicity')}
@@ -152,6 +172,24 @@ export const BrandCustomizerModal: React.FC = () => {
 
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Read-Only Notice for Non-Super-Admins */}
+          {!isSuperAdmin && (
+            <div className="p-4 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-start gap-3 text-amber-900 text-xs shadow-xs">
+              <Lock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="font-bold flex items-center gap-2">
+                  <span>UI Design System Managed by Super Administrator</span>
+                  <span className="px-2 py-0.2 rounded-full text-[10px] bg-amber-200/60 font-mono text-amber-800">
+                    {activeRole}
+                  </span>
+                </div>
+                <p className="text-amber-800/90 mt-0.5 leading-relaxed">
+                  Only the <strong>Super Administrator</strong> has permission to alter ERP design eras, color palettes, brand logos, and interface density. All controls are displayed in read-only mode for your reference.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Live Component Preview Strip */}
           <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
             <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
@@ -216,6 +254,137 @@ export const BrandCustomizerModal: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* TAB 0: ERA DESIGN SYSTEMS (6 DISTINCT ERAS) */}
+          {activeTab === 'eras' && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#1ec94c]" />
+                    <span>Select an Era System for the entire ERP</span>
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Switching an era system instantly updates every area: navigation, shell, cards, tables, buttons, and metrics.
+                  </p>
+                </div>
+                <span className="text-[11px] font-mono font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 shrink-0">
+                  Active: {activeEra.name}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {ERA_LIST.map((era) => {
+                  const isCurrent = (theme.era || 'cognify-bento') === era.id;
+                  return (
+                    <div
+                      key={era.id}
+                      className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                        isCurrent
+                          ? 'border-slate-900 bg-slate-50/80 shadow-md ring-2 ring-slate-900/10'
+                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/40'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-2xl p-1.5 rounded-xl bg-white shadow-xs border border-slate-100">
+                              {era.iconEmoji}
+                            </span>
+                            <div>
+                              <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                <span>{era.name}</span>
+                                {isCurrent && (
+                                  <span className="px-2 py-0.5 rounded-full bg-[#1d1d1f] text-white text-[9px] font-bold">
+                                    Active
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] font-mono text-slate-500 font-semibold">
+                                {era.eraName}
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase bg-slate-200/70 text-slate-700 shrink-0">
+                            {era.borderRadius}
+                          </span>
+                        </div>
+
+                        <p className="text-xs font-semibold text-slate-800 mb-1 leading-snug">
+                          {era.tagline}
+                        </p>
+                        <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
+                          {era.description}
+                        </p>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between gap-2">
+                        {/* Swatches */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-slate-400 font-medium">Palette:</span>
+                          <div
+                            className="w-5 h-5 rounded-md border border-black/10 shadow-xs"
+                            title={`App BG: ${era.appBackground}`}
+                            style={{ backgroundColor: era.appBackground }}
+                          />
+                          <div
+                            className="w-5 h-5 rounded-md border border-black/10 shadow-xs"
+                            title={`Shell BG: ${era.shellBackground}`}
+                            style={{ backgroundColor: era.shellBackground }}
+                          />
+                          <div
+                            className="w-5 h-5 rounded-md border border-black/10 shadow-xs"
+                            title={`Primary: ${era.primaryColor}`}
+                            style={{ backgroundColor: era.primaryColor }}
+                          />
+                          <div
+                            className="w-5 h-5 rounded-md border border-black/10 shadow-xs"
+                            title={`Accent: ${era.accentColor}`}
+                            style={{ backgroundColor: era.accentColor }}
+                          />
+                        </div>
+
+                        {/* Action Button */}
+                        <button
+                          type="button"
+                          disabled={!isSuperAdmin}
+                          onClick={() => {
+                            if (!isSuperAdmin) return;
+                            setEra(era.id);
+                            showToast(`Activated ${era.name}! Every area of the ERP has morphed.`);
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            isCurrent
+                              ? 'bg-[#1d1d1f] text-white cursor-default'
+                              : !isSuperAdmin
+                              ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-75'
+                              : 'bg-white border border-slate-300 hover:border-slate-400 text-slate-800 hover:bg-slate-100 shadow-xs cursor-pointer'
+                          }`}
+                        >
+                          {isCurrent ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[#1ec94c]" />
+                              <span>Active Era</span>
+                            </>
+                          ) : !isSuperAdmin ? (
+                            <>
+                              <Lock className="w-3 h-3 text-slate-400" />
+                              <span>Admin Only</span>
+                            </>
+                          ) : (
+                            <>
+                              <Zap className="w-3.5 h-3.5 text-amber-500" />
+                              <span>Activate Era</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* TAB 1: COLORS & THEME */}
           {activeTab === 'colors' && (
@@ -431,13 +600,13 @@ export const BrandCustomizerModal: React.FC = () => {
                     <button
                       onClick={() =>
                         updateTheme({
-                          logoImageUrl:
-                            'https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/layers.svg'
+                          logoImageUrl: '/assets/aistudio/2025-07-24_12.34.50_1f1aaac7.jpg',
+                          logoStyle: 'custom-image'
                         })
                       }
-                      className="px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-xl hover:bg-slate-100"
+                      className="px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-xl hover:bg-slate-100 cursor-pointer"
                     >
-                      Use Sample
+                      Use Official Emblem
                     </button>
                   </div>
                   <p className="text-[11px] text-slate-500">
@@ -590,38 +759,45 @@ export const BrandCustomizerModal: React.FC = () => {
 
         {/* Modal Footer with Actions */}
         <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                resetTheme();
-                showToast('Reset to OTP Signature (#545454 & #feb913)');
-              }}
-              className="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-white rounded-xl border border-slate-200 flex items-center gap-1.5 transition-colors"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset Defaults</span>
-            </button>
+          {isSuperAdmin ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  resetTheme();
+                  showToast('Reset to OTP Signature (#545454 & #feb913)');
+                }}
+                className="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-white rounded-xl border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset Defaults</span>
+              </button>
 
-            <button
-              onClick={() => {
-                updateTheme({
-                  primaryColor: '#545454',
-                  accentColor: '#feb913',
-                  sidebarTone: 'charcoal'
-                });
-                showToast('Applied OTP Signature Palette');
-              }}
-              className="px-3 py-2 text-xs font-bold rounded-xl border shadow-xs flex items-center gap-1.5 transition-all"
-              style={{
-                backgroundColor: '#feb913',
-                color: '#1a1a1a',
-                borderColor: '#e5a408'
-              }}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Apply #545454 & #feb913</span>
-            </button>
-          </div>
+              <button
+                onClick={() => {
+                  updateTheme({
+                    primaryColor: '#545454',
+                    accentColor: '#feb913',
+                    sidebarTone: 'charcoal'
+                  });
+                  showToast('Applied OTP Signature Palette');
+                }}
+                className="px-3 py-2 text-xs font-bold rounded-xl border shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                style={{
+                  backgroundColor: '#feb913',
+                  color: '#1a1a1a',
+                  borderColor: '#e5a408'
+                }}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Apply #545454 & #feb913</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+              <Lock className="w-3.5 h-3.5 text-amber-600" />
+              <span>UI customization permissions restricted to Super Administrator</span>
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             {toastMessage && (
@@ -632,9 +808,9 @@ export const BrandCustomizerModal: React.FC = () => {
             )}
             <button
               onClick={() => setIsCustomizerOpen(false)}
-              className="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-xs transition-colors"
+              className="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-xs transition-colors cursor-pointer"
             >
-              Done & Save
+              {isSuperAdmin ? 'Done & Save' : 'Close (Read-Only)'}
             </button>
           </div>
         </div>

@@ -272,6 +272,39 @@
         "timestamp": { "type": "string" }
       },
       "required": ["id", "title", "message", "type", "isRead"]
+    },
+    "ChatChannel": {
+      "title": "ChatChannel",
+      "description": "Team communication channel or direct message thread",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["channel", "dm"] },
+        "description": { "type": "string" },
+        "department": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "type"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Real-time team chat message with ERP entity linking and reactions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "channelId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderRole": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "createdAtMs": { "type": "number" },
+        "priority": { "type": "string" },
+        "isPinned": { "type": "boolean" }
+      },
+      "required": ["id", "channelId", "senderId", "senderName", "content"]
     }
   },
   "firestore": {
@@ -330,6 +363,15 @@
     "/notifications/{notificationId}": {
       "schema": "Notification",
       "description": "Operational alerts and notifications"
+    },
+    "/chatChannels/{channelId}": {
+      "schema": "ChatChannel",
+      "description": "Team communication channels and direct message rooms"
+    },
+    "/chatMessages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Real-time team chat messages"
     }
   }
 }
+

@@ -16,20 +16,26 @@ import {
   NotificationItem,
   SystemSettings,
   BrandThemeConfig,
-  AuditLogEntry
+  AuditLogEntry,
+  UserTimeRewardRecord,
+  RewardRedemption
 } from '../types';
 
 export const defaultBrandTheme: BrandThemeConfig = {
-  primaryColor: '#545454',
-  accentColor: '#feb913',
+  era: 'cognify-bento',
+  primaryColor: '#1d1d1f',
+  accentColor: '#1ec94c',
+  accentSecondary: '#1d7dfa',
+  accentTertiary: '#f73b9b',
   sidebarTone: 'charcoal',
-  logoStyle: 'monogram',
+  logoStyle: 'custom-image',
+  logoImageUrl: '/assets/aistudio/2025-07-24_12.34.50_1f1aaac7.jpg',
   companyName: 'Open Technology PLC',
   companyShortName: 'OTP',
   companyTagline: 'Marketing & Digital Advertising Agency',
   density: 'comfortable',
   simplicityMode: 'balanced',
-  borderRadius: 'modern',
+  borderRadius: 'rounded',
   hideDecorativeCards: false,
   highContrastTables: false,
   enableTransitions: true
@@ -1212,4 +1218,224 @@ export const initialAuditLogs: AuditLogEntry[] = [
     severity: 'normal'
   }
 ];
+
+export const initialUserTimeRewards: UserTimeRewardRecord[] = [
+  {
+    userId: 'usr-1',
+    fullName: 'Nathnael Nasir',
+    role: 'Super Administrator',
+    department: 'Management',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    todayActiveMinutes: 375, // 6h 15m
+    todayPauseMinutes: 25,
+    weeklyActiveMinutes: 2420,
+    totalActiveMinutes: 7618, // 126h 58m (matches Cognify reference!)
+    totalPauseMinutes: 585,   // 9h 45m (matches Cognify reference!)
+    tasksCompletedCount: 18,
+    deliverablesApprovedCount: 14,
+    streakDays: 6,
+    manualBonusPoints: 150,
+    redeemedPoints: 300,
+    lastActiveTimestamp: new Date().toISOString(),
+    dailyHistory: [
+      { date: 'Mon', activeMinutes: 360, pauseMinutes: 30, tasksCompleted: 3, deliverablesApproved: 2, earnedPoints: 265 },
+      { date: 'Tue', activeMinutes: 390, pauseMinutes: 20, tasksCompleted: 4, deliverablesApproved: 3, earnedPoints: 335 },
+      { date: 'Wed', activeMinutes: 410, pauseMinutes: 25, tasksCompleted: 4, deliverablesApproved: 4, earnedPoints: 370 },
+      { date: 'Thu', activeMinutes: 345, pauseMinutes: 35, tasksCompleted: 3, deliverablesApproved: 2, earnedPoints: 255 },
+      { date: 'Fri', activeMinutes: 375, pauseMinutes: 25, tasksCompleted: 4, deliverablesApproved: 3, earnedPoints: 325 }
+    ]
+  },
+  {
+    userId: 'usr-2',
+    fullName: 'Dawit Tadesse',
+    role: 'Managing Director',
+    department: 'Management',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    todayActiveMinutes: 340,
+    todayPauseMinutes: 30,
+    weeklyActiveMinutes: 2180,
+    totalActiveMinutes: 6840,
+    totalPauseMinutes: 540,
+    tasksCompletedCount: 15,
+    deliverablesApprovedCount: 16,
+    streakDays: 5,
+    manualBonusPoints: 100,
+    redeemedPoints: 450,
+    lastActiveTimestamp: new Date().toISOString(),
+    dailyHistory: [
+      { date: 'Mon', activeMinutes: 320, pauseMinutes: 35, tasksCompleted: 3, deliverablesApproved: 3, earnedPoints: 240 },
+      { date: 'Tue', activeMinutes: 355, pauseMinutes: 25, tasksCompleted: 3, deliverablesApproved: 4, earnedPoints: 315 },
+      { date: 'Wed', activeMinutes: 370, pauseMinutes: 20, tasksCompleted: 4, deliverablesApproved: 3, earnedPoints: 325 },
+      { date: 'Thu', activeMinutes: 310, pauseMinutes: 40, tasksCompleted: 2, deliverablesApproved: 3, earnedPoints: 215 },
+      { date: 'Fri', activeMinutes: 340, pauseMinutes: 30, tasksCompleted: 3, deliverablesApproved: 3, earnedPoints: 280 }
+    ]
+  },
+  {
+    userId: 'usr-3',
+    fullName: 'Sara Alemayehu',
+    role: 'Finance Manager',
+    department: 'Finance',
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    todayActiveMinutes: 395,
+    todayPauseMinutes: 18,
+    weeklyActiveMinutes: 2510,
+    totalActiveMinutes: 7320,
+    totalPauseMinutes: 410,
+    tasksCompletedCount: 22,
+    deliverablesApprovedCount: 9,
+    streakDays: 7,
+    manualBonusPoints: 200,
+    redeemedPoints: 500,
+    lastActiveTimestamp: new Date().toISOString(),
+    dailyHistory: [
+      { date: 'Mon', activeMinutes: 380, pauseMinutes: 20, tasksCompleted: 5, deliverablesApproved: 2, earnedPoints: 310 },
+      { date: 'Tue', activeMinutes: 400, pauseMinutes: 15, tasksCompleted: 4, deliverablesApproved: 2, earnedPoints: 300 },
+      { date: 'Wed', activeMinutes: 390, pauseMinutes: 22, tasksCompleted: 5, deliverablesApproved: 2, earnedPoints: 315 },
+      { date: 'Thu', activeMinutes: 370, pauseMinutes: 25, tasksCompleted: 4, deliverablesApproved: 1, earnedPoints: 265 },
+      { date: 'Fri', activeMinutes: 395, pauseMinutes: 18, tasksCompleted: 4, deliverablesApproved: 2, earnedPoints: 305 }
+    ]
+  },
+  {
+    userId: 'usr-4',
+    fullName: 'Yonas Bekele',
+    role: 'Project Manager',
+    department: 'Marketing',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    todayActiveMinutes: 350,
+    todayPauseMinutes: 28,
+    weeklyActiveMinutes: 2290,
+    totalActiveMinutes: 6490,
+    totalPauseMinutes: 520,
+    tasksCompletedCount: 24,
+    deliverablesApprovedCount: 11,
+    streakDays: 5,
+    manualBonusPoints: 80,
+    redeemedPoints: 300,
+    lastActiveTimestamp: new Date().toISOString(),
+    dailyHistory: [
+      { date: 'Mon', activeMinutes: 340, pauseMinutes: 30, tasksCompleted: 5, deliverablesApproved: 2, earnedPoints: 290 },
+      { date: 'Tue', activeMinutes: 360, pauseMinutes: 25, tasksCompleted: 5, deliverablesApproved: 3, earnedPoints: 330 },
+      { date: 'Wed', activeMinutes: 355, pauseMinutes: 20, tasksCompleted: 6, deliverablesApproved: 2, earnedPoints: 325 },
+      { date: 'Thu', activeMinutes: 330, pauseMinutes: 35, tasksCompleted: 4, deliverablesApproved: 2, earnedPoints: 260 },
+      { date: 'Fri', activeMinutes: 350, pauseMinutes: 28, tasksCompleted: 4, deliverablesApproved: 2, earnedPoints: 280 }
+    ]
+  },
+  {
+    userId: 'usr-5',
+    fullName: 'Hanna Girma',
+    role: 'Social Media Manager',
+    department: 'Marketing',
+    avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
+    todayActiveMinutes: 410,
+    todayPauseMinutes: 22,
+    weeklyActiveMinutes: 2580,
+    totalActiveMinutes: 7850,
+    totalPauseMinutes: 460,
+    tasksCompletedCount: 19,
+    deliverablesApprovedCount: 26,
+    streakDays: 8,
+    manualBonusPoints: 250,
+    redeemedPoints: 450,
+    lastActiveTimestamp: new Date().toISOString(),
+    dailyHistory: [
+      { date: 'Mon', activeMinutes: 390, pauseMinutes: 25, tasksCompleted: 4, deliverablesApproved: 5, earnedPoints: 385 },
+      { date: 'Tue', activeMinutes: 405, pauseMinutes: 20, tasksCompleted: 4, deliverablesApproved: 6, earnedPoints: 420 },
+      { date: 'Wed', activeMinutes: 420, pauseMinutes: 18, tasksCompleted: 4, deliverablesApproved: 5, earnedPoints: 400 },
+      { date: 'Thu', activeMinutes: 385, pauseMinutes: 30, tasksCompleted: 3, deliverablesApproved: 5, earnedPoints: 360 },
+      { date: 'Fri', activeMinutes: 410, pauseMinutes: 22, tasksCompleted: 4, deliverablesApproved: 5, earnedPoints: 395 }
+    ]
+  },
+  {
+    userId: 'usr-6',
+    fullName: 'Meron Teshome',
+    role: 'HR Manager',
+    department: 'Administration',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+    todayActiveMinutes: 325,
+    todayPauseMinutes: 32,
+    weeklyActiveMinutes: 2040,
+    totalActiveMinutes: 5980,
+    totalPauseMinutes: 590,
+    tasksCompletedCount: 14,
+    deliverablesApprovedCount: 8,
+    streakDays: 4,
+    manualBonusPoints: 50,
+    redeemedPoints: 0,
+    lastActiveTimestamp: new Date().toISOString(),
+    dailyHistory: [
+      { date: 'Mon', activeMinutes: 310, pauseMinutes: 35, tasksCompleted: 3, deliverablesApproved: 1, earnedPoints: 185 },
+      { date: 'Tue', activeMinutes: 340, pauseMinutes: 25, tasksCompleted: 3, deliverablesApproved: 2, earnedPoints: 255 },
+      { date: 'Wed', activeMinutes: 335, pauseMinutes: 30, tasksCompleted: 3, deliverablesApproved: 2, earnedPoints: 250 },
+      { date: 'Thu', activeMinutes: 300, pauseMinutes: 40, tasksCompleted: 2, deliverablesApproved: 1, earnedPoints: 165 },
+      { date: 'Fri', activeMinutes: 325, pauseMinutes: 32, tasksCompleted: 3, deliverablesApproved: 2, earnedPoints: 215 }
+    ]
+  },
+  {
+    userId: 'usr-7',
+    fullName: 'Abel Tesfaye',
+    role: 'Employee',
+    department: 'Creative & Design',
+    avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
+    todayActiveMinutes: 365,
+    todayPauseMinutes: 20,
+    weeklyActiveMinutes: 2340,
+    totalActiveMinutes: 6720,
+    totalPauseMinutes: 430,
+    tasksCompletedCount: 21,
+    deliverablesApprovedCount: 18,
+    streakDays: 5,
+    manualBonusPoints: 120,
+    redeemedPoints: 300,
+    lastActiveTimestamp: new Date().toISOString(),
+    dailyHistory: [
+      { date: 'Mon', activeMinutes: 350, pauseMinutes: 25, tasksCompleted: 4, deliverablesApproved: 3, earnedPoints: 315 },
+      { date: 'Tue', activeMinutes: 375, pauseMinutes: 18, tasksCompleted: 5, deliverablesApproved: 4, earnedPoints: 370 },
+      { date: 'Wed', activeMinutes: 360, pauseMinutes: 22, tasksCompleted: 4, deliverablesApproved: 4, earnedPoints: 340 },
+      { date: 'Thu', activeMinutes: 345, pauseMinutes: 28, tasksCompleted: 4, deliverablesApproved: 3, earnedPoints: 310 },
+      { date: 'Fri', activeMinutes: 365, pauseMinutes: 20, tasksCompleted: 4, deliverablesApproved: 4, earnedPoints: 345 }
+    ]
+  }
+];
+
+export const initialRewardRedemptions: RewardRedemption[] = [
+  {
+    id: 'red-101',
+    userId: 'usr-5',
+    userName: 'Hanna Girma',
+    userRole: 'Social Media Manager',
+    rewardId: 'rew-coffee',
+    rewardTitle: 'Tomoca Coffee & Executive Pastry Voucher',
+    pointsSpent: 450,
+    monetaryValueETB: 800,
+    status: 'Pending Approval',
+    requestedAt: '2025-02-24 10:30'
+  },
+  {
+    id: 'red-102',
+    userId: 'usr-3',
+    userName: 'Sara Alemayehu',
+    userRole: 'Finance Manager',
+    rewardId: 'rew-data',
+    rewardTitle: 'Monthly Unlimited 5G Mobile Data Package',
+    pointsSpent: 500,
+    monetaryValueETB: 1000,
+    status: 'Fulfilled',
+    requestedAt: '2025-02-20 14:15',
+    processedBy: 'Nathnael Nasir'
+  },
+  {
+    id: 'red-103',
+    userId: 'usr-7',
+    userName: 'Abel Tesfaye',
+    userRole: 'Employee',
+    rewardId: 'rew-coffee',
+    rewardTitle: 'Specialty Roastery Coffee Voucher',
+    pointsSpent: 300,
+    monetaryValueETB: 500,
+    status: 'Approved',
+    requestedAt: '2025-02-22 16:40',
+    processedBy: 'Nathnael Nasir'
+  }
+];
+
 

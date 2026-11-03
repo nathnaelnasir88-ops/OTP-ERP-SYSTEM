@@ -32,6 +32,12 @@ import {
   calculateSMMMetrics,
   calculateProjectProgress
 } from '../../utils/calculations';
+import {
+  calculateUserRewardBreakdown,
+  formatMinutesToHoursMins,
+  REWARD_METHODS
+} from '../../utils/timeRewards';
+import { useAuth } from '../../context/AuthContext';
 
 export const ExecutiveDashboard: React.FC = () => {
   const {
@@ -45,8 +51,21 @@ export const ExecutiveDashboard: React.FC = () => {
     employees,
     purchaseOrders,
     setCurrentModule,
-    settings
+    settings,
+    currentUser,
+    rewardConfig,
+    userTimeRewards,
+    setIsTimeRewardsModalOpen
   } = useERP();
+  const { userProfile } = useAuth();
+
+  const activeUserId = userProfile?.id || currentUser.id || 'usr-1';
+  const myTimeRecord =
+    userTimeRewards.find((r) => r.userId === activeUserId) ||
+    userTimeRewards.find((r) => r.fullName.toLowerCase() === (userProfile?.fullName || currentUser.fullName).toLowerCase()) ||
+    userTimeRewards[0];
+  const myRewardBreakdown = calculateUserRewardBreakdown(myTimeRecord, rewardConfig);
+  const activeMethodDef = REWARD_METHODS[rewardConfig.method] || REWARD_METHODS['hybrid-productivity'];
 
   const [statusMode, setStatusMode] = useState<'count' | 'percent'>('count');
   const [selectedDay, setSelectedDay] = useState<string>('Wed');
@@ -522,39 +541,57 @@ export const ExecutiveDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* BOTTOM-RIGHT CARD: Financial & Productivity Trend (Smooth Dual Spline Chart) */}
+        {/* BOTTOM-RIGHT CARD: Productivity Trend & Time Rewards (Cognify Reference Aesthetic) */}
         <div className="bg-white rounded-[28px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.025)] flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-medium text-[#1d1d1f]">Productivity & Cash Trend</h3>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h3 className="text-base font-medium text-[#1d1d1f]">Productivity Trend</h3>
+              <p className="text-[11px] text-[#86868b]">
+                Method: {activeMethodDef.shortLabel} · <strong className="text-[#1ec94c]">{myRewardBreakdown.availablePoints.toLocaleString()} pts</strong>
+              </p>
+            </div>
 
-            <button
-              onClick={() => setTrendPeriod(trendPeriod === 'Daily' ? 'Monthly' : 'Daily')}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#f4f5f7] hover:bg-[#e5e7ec] text-xs font-medium text-[#1d1d1f] transition-colors cursor-pointer"
-            >
-              <Calendar className="w-3.5 h-3.5 text-slate-500" />
-              <span>{trendPeriod}</span>
-              <ChevronDown className="w-3 h-3 text-slate-500" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsTimeRewardsModalOpen(true)}
+                className="px-3 py-1.5 rounded-full bg-[#1d1d1f] hover:bg-slate-800 text-[#feb913] text-[11px] font-bold transition-colors cursor-pointer"
+              >
+                ★ Rewards
+              </button>
+              <button
+                onClick={() => setTrendPeriod(trendPeriod === 'Daily' ? 'Monthly' : 'Daily')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f4f5f7] hover:bg-[#e5e7ec] text-xs font-medium text-[#1d1d1f] transition-colors cursor-pointer"
+              >
+                <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                <span>{trendPeriod}</span>
+                <ChevronDown className="w-3 h-3 text-slate-500" />
+              </button>
+            </div>
           </div>
 
           {/* Inner Soft Gray Chart Box */}
           <div className="bg-[#f8f9fb] rounded-[22px] p-4 my-3 flex flex-col justify-between">
-            {/* Floating Legend Pills */}
+            {/* Floating Legend Pills (Exact Cognify Active Time / Pause Time Pills) */}
             <div className="flex items-center justify-center gap-1.5 mb-2">
-              <div
-                className="px-2.5 py-1 rounded-full bg-[#1d1d1f] text-white text-[11px] font-medium flex items-center gap-1.5 shadow-2xs whitespace-nowrap"
-                title={`White Bank Balance: ${financialBalances.whiteBankBalance.toLocaleString()} ETB`}
+              <button
+                type="button"
+                onClick={() => setIsTimeRewardsModalOpen(true)}
+                className="px-2.5 py-1 rounded-full bg-[#1d1d1f] text-white text-[11px] font-medium flex items-center gap-1.5 shadow-2xs whitespace-nowrap cursor-pointer"
+                title="Click to open Time Spent & Rewards Studio"
               >
                 <span className="w-2 h-2 rounded-full bg-[#1d7dfa]" />
-                <span>White Bank: {(financialBalances.whiteBankBalance / 1000).toFixed(0)}k ETB</span>
-              </div>
-              <div
-                className="px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-[11px] font-medium flex items-center gap-1.5 shadow-2xs border border-slate-100 whitespace-nowrap"
-                title={`Black Cash Safe: ${financialBalances.blackCashBalance.toLocaleString()} ETB`}
+                <span>{formatMinutesToHoursMins(myTimeRecord.todayActiveMinutes)} active time</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsTimeRewardsModalOpen(true)}
+                className="px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-[11px] font-medium flex items-center gap-1.5 shadow-2xs border border-slate-100 whitespace-nowrap cursor-pointer"
+                title="Click to open Time Spent & Rewards Studio"
               >
                 <span className="w-2 h-2 rounded-full bg-[#f73b9b]" />
-                <span>Black Cash: {(financialBalances.blackCashBalance / 1000).toFixed(0)}k ETB</span>
-              </div>
+                <span>{formatMinutesToHoursMins(myTimeRecord.todayPauseMinutes)} pause time</span>
+              </button>
             </div>
 
             {/* Smooth Spline Wave Chart */}
@@ -565,10 +602,9 @@ export const ExecutiveDashboard: React.FC = () => {
                   <YAxis domain={[20, 100]} hide />
                   <Tooltip
                     formatter={(val: any, name: any) => [
-                      name === 'revenueIndex' ? 'Revenue Stream Index: ' + val : 'Expense Stream Index: ' + val,
+                      name === 'revenueIndex' ? 'Active Focus Index: ' + val : 'Pause / Cash Index: ' + val,
                       ''
                     ]}
-
                     contentStyle={{
                       backgroundColor: '#1d1d1f',
                       borderRadius: '14px',
@@ -645,27 +681,35 @@ export const ExecutiveDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Bottom Dual Readouts */}
+          {/* Bottom Dual Readouts (Exact Cognify Total active time & Total pause time + Reward Points) */}
           <div className="grid grid-cols-2 gap-4 pt-1">
-            <div>
-              <div className="text-xs text-[#86868b]">Total Revenue</div>
+            <div
+              onClick={() => setIsTimeRewardsModalOpen(true)}
+              className="cursor-pointer group"
+            >
+              <div className="text-xs text-[#86868b] group-hover:text-[#1d1d1f] transition-colors">
+                Total active time
+              </div>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-xl sm:text-2xl font-normal tracking-tight text-[#1d1d1f]">
-                  {(financialBalances.totalIncome / 1000).toFixed(0)}k ETB
+                  {formatMinutesToHoursMins(myTimeRecord.totalActiveMinutes)}
                 </span>
                 <span className="text-[11px] font-semibold text-[#1ec94c]">↑ 14%</span>
               </div>
             </div>
 
-            <div>
-              <div className="text-xs text-[#86868b]">Net Profit</div>
+            <div
+              onClick={() => setIsTimeRewardsModalOpen(true)}
+              className="cursor-pointer group"
+            >
+              <div className="text-xs text-[#86868b] group-hover:text-[#1d1d1f] transition-colors">
+                Total pause time
+              </div>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-xl sm:text-2xl font-normal tracking-tight text-[#1d1d1f]">
-                  {(financialBalances.netProfit / 1000).toFixed(0)}k ETB
+                  {formatMinutesToHoursMins(myTimeRecord.totalPauseMinutes)}
                 </span>
-                <span className="text-[11px] font-semibold text-[#f73b9b]">
-                  {financialBalances.profitMargin}%
-                </span>
+                <span className="text-[11px] font-semibold text-[#f73b9b]">↓ 21%</span>
               </div>
             </div>
           </div>

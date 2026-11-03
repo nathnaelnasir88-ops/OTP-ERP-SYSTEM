@@ -39,8 +39,12 @@ export const AuthScreen: React.FC = () => {
         {/* Brand Pill & Header */}
         <div className="text-center mb-6 flex flex-col items-center">
           <div className="inline-flex items-center gap-2.5 bg-white px-4 py-2 rounded-full shadow-xs mb-3">
-            <div className="w-7 h-7 rounded-full bg-[#1d1d1f] text-white flex items-center justify-center font-black text-xs tracking-tight">
-              OTP
+            <div className="w-8 h-8 rounded-full overflow-hidden bg-black flex items-center justify-center shrink-0 border border-slate-200 shadow-xs">
+              <img
+                src="/assets/aistudio/2025-07-24_12.34.50_1f1aaac7.jpg"
+                alt="Open Technology PLC Logo"
+                className="w-full h-full object-cover"
+              />
             </div>
             <span className="font-bold text-sm text-[#1d1d1f] tracking-tight">OpenTech</span>
           </div>

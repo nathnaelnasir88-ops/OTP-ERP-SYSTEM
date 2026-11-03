@@ -5,6 +5,7 @@ import {
   getDefaultModuleForRole,
   getAccessibleModules,
   filterAccessibleNavItems,
+  canChangeUIDesign,
   ROLE_PERMISSIONS
 } from './rbac';
 import { AppModule } from '../types';
@@ -63,7 +64,28 @@ test('filterAccessibleNavItems returns permitted modules including personal sett
 
 test('getAccessibleModules returns expected list of modules for HR Manager', () => {
   const hrModules = getAccessibleModules('HR Manager');
-  assert.deepEqual(hrModules, ['dashboard', 'hr', 'reports', 'settings']);
+  assert.deepEqual(hrModules, ['dashboard', 'messages', 'hr', 'reports', 'settings']);
 });
+
+test('All corporate roles have access to the messages chat environment', () => {
+  const roles = Object.keys(ROLE_PERMISSIONS) as (keyof typeof ROLE_PERMISSIONS)[];
+  for (const role of roles) {
+    assert.equal(hasModuleAccess(role, 'messages'), true, `${role} should have access to messages`);
+  }
+});
+
+test('Only Super Administrator can change the UI design', () => {
+  assert.equal(canChangeUIDesign('Super Administrator'), true);
+  assert.equal(canChangeUIDesign('Managing Director'), false);
+  assert.equal(canChangeUIDesign('Finance Manager'), false);
+  assert.equal(canChangeUIDesign('Marketing Manager'), false);
+  assert.equal(canChangeUIDesign('Project Manager'), false);
+  assert.equal(canChangeUIDesign('Social Media Manager'), false);
+  assert.equal(canChangeUIDesign('Designer / Content Creator'), false);
+  assert.equal(canChangeUIDesign('Media Buyer'), false);
+  assert.equal(canChangeUIDesign('HR Manager'), false);
+  assert.equal(canChangeUIDesign('Employee'), false);
+});
+
 
 

@@ -8,12 +8,23 @@
   --otp-accent-gold: #feb913;
   --otp-surface: #f5f6f8;
   --otp-card: #ffffff;
+
+  /* Global ERP Era System Variables */
+  --erp-app-bg: #e4e7ec;
+  --erp-shell-bg: #f5f6f8;
+  --erp-card-bg: #ffffff;
+  --erp-text: #1d1d1f;
+  --erp-muted: #86868b;
+  --erp-border: rgba(0, 0, 0, 0.05);
+  --erp-radius: 28px;
+  --erp-shadow: 0 20px 60px rgba(0, 0, 0, 0.06);
 }
 
 body {
-  background-color: #e4e7ec;
-  color: #1d1d1f;
+  background-color: var(--erp-app-bg, #e4e7ec);
+  color: var(--erp-text, #1d1d1f);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* Diagonal hatched stripe pattern for Cognify progress bars & blocks */
@@ -44,6 +55,304 @@ body {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* =========================================================================
+   ERA SYSTEM 1: COGNIFY SOFT BENTO (2026 Modern Apple-Like Bento)
+   ========================================================================= */
+[data-era="cognify-bento"] {
+  --erp-app-bg: #e4e7ec;
+  --erp-shell-bg: #f5f6f8;
+  --erp-card-bg: #ffffff;
+  --erp-text: #1d1d1f;
+  --erp-muted: #86868b;
+  --erp-border: rgba(0, 0, 0, 0.05);
+  --erp-radius: 28px;
+}
+
+/* =========================================================================
+   ERA SYSTEM 2: CYBERPUNK NEO-OPS (2049 Sci-Fi Dark HUD)
+   ========================================================================= */
+[data-era="cyberpunk-neon"] {
+  --erp-app-bg: #060709;
+  --erp-shell-bg: #0b0e14;
+  --erp-card-bg: #111622;
+  --erp-text: #e2e8f0;
+  --erp-muted: #94a3b8;
+  --erp-border: rgba(0, 229, 255, 0.25);
+  --erp-radius: 12px;
+}
+
+[data-era="cyberpunk-neon"] body {
+  background-color: #060709;
+  color: #e2e8f0;
+}
+
+[data-era="cyberpunk-neon"] .erp-shell {
+  background-color: #0b0e14 !important;
+  border-color: rgba(0, 229, 255, 0.3) !important;
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.12) !important;
+}
+
+[data-era="cyberpunk-neon"] header {
+  background-color: rgba(11, 14, 20, 0.95) !important;
+  border-color: rgba(0, 229, 255, 0.2) !important;
+}
+
+[data-era="cyberpunk-neon"] .bg-white {
+  background-color: #111622 !important;
+  border-color: rgba(0, 229, 255, 0.18) !important;
+}
+
+[data-era="cyberpunk-neon"] .bg-\[\#f5f6f8\],
+[data-era="cyberpunk-neon"] .bg-\[\#ebedf0\],
+[data-era="cyberpunk-neon"] .bg-\[\#f4f5f7\],
+[data-era="cyberpunk-neon"] .bg-slate-50,
+[data-era="cyberpunk-neon"] .bg-slate-100 {
+  background-color: #182030 !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(0, 229, 255, 0.2) !important;
+}
+
+[data-era="cyberpunk-neon"] .text-\[\#1d1d1f\],
+[data-era="cyberpunk-neon"] .text-slate-900,
+[data-era="cyberpunk-neon"] .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+
+[data-era="cyberpunk-neon"] .text-\[\#86868b\],
+[data-era="cyberpunk-neon"] .text-slate-500,
+[data-era="cyberpunk-neon"] .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+[data-era="cyberpunk-neon"] .border-slate-200,
+[data-era="cyberpunk-neon"] .border-slate-100,
+[data-era="cyberpunk-neon"] .border-black\/\[0\.04\] {
+  border-color: rgba(0, 229, 255, 0.18) !important;
+}
+
+[data-era="cyberpunk-neon"] input,
+[data-era="cyberpunk-neon"] select,
+[data-era="cyberpunk-neon"] textarea {
+  background-color: #0b0e14 !important;
+  color: #f8fafc !important;
+  border-color: rgba(0, 229, 255, 0.3) !important;
+}
+
+/* =========================================================================
+   ERA SYSTEM 3: CLASSIC 90s ENTERPRISE (1995 Mainframe / SAP Windows 95)
+   ========================================================================= */
+[data-era="classic-90s-erp"] {
+  --erp-app-bg: #3a6ea5;
+  --erp-shell-bg: #d4d0c8;
+  --erp-card-bg: #ece9d8;
+  --erp-text: #000000;
+  --erp-muted: #555555;
+  --erp-border: #808080;
+  --erp-radius: 0px;
+}
+
+[data-era="classic-90s-erp"] * {
+  border-radius: 0px !important;
+  font-family: "Courier New", Courier, monospace, Tahoma, sans-serif !important;
+}
+
+[data-era="classic-90s-erp"] body {
+  background-color: #3a6ea5;
+  color: #000000;
+}
+
+[data-era="classic-90s-erp"] .erp-shell {
+  background-color: #d4d0c8 !important;
+  border: 3px solid #808080 !important;
+  border-color: #ffffff #404040 #404040 #ffffff !important;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-era="classic-90s-erp"] .bg-white {
+  background-color: #ece9d8 !important;
+  border: 2px solid #808080 !important;
+  border-color: #ffffff #808080 #808080 #ffffff !important;
+}
+
+[data-era="classic-90s-erp"] header {
+  background-color: #000080 !important;
+  color: #ffffff !important;
+  border-bottom: 2px solid #ffffff !important;
+}
+
+[data-era="classic-90s-erp"] header .text-\[\#1d1d1f\],
+[data-era="classic-90s-erp"] header .text-slate-900 {
+  color: #ffffff !important;
+}
+
+[data-era="classic-90s-erp"] header button {
+  background-color: #d4d0c8 !important;
+  color: #000000 !important;
+  border: 2px solid !important;
+  border-color: #ffffff #808080 #808080 #ffffff !important;
+  box-shadow: 1px 1px 0px #000000 !important;
+}
+
+[data-era="classic-90s-erp"] header button:hover {
+  background-color: #ece9d8 !important;
+}
+
+[data-era="classic-90s-erp"] header button.bg-\[\#1d1d1f\] {
+  background-color: #000080 !important;
+  color: #ffffff !important;
+  border-color: #808080 #ffffff #ffffff #808080 !important;
+}
+
+[data-era="classic-90s-erp"] button.bg-blue-600,
+[data-era="classic-90s-erp"] button.bg-\[\#1d1d1f\] {
+  background-color: #000080 !important;
+  color: #ffffff !important;
+  border: 2px solid !important;
+  border-color: #ffffff #000000 #000000 #ffffff !important;
+}
+
+/* =========================================================================
+   ERA SYSTEM 4: SWISS BAUHAUS MODERNIST (1960s International Minimalist)
+   ========================================================================= */
+[data-era="swiss-bauhaus"] {
+  --erp-app-bg: #e5e5e5;
+  --erp-shell-bg: #f2f2f2;
+  --erp-card-bg: #ffffff;
+  --erp-text: #000000;
+  --erp-muted: #555555;
+  --erp-border: #000000;
+  --erp-radius: 2px;
+}
+
+[data-era="swiss-bauhaus"] * {
+  border-radius: 2px !important;
+}
+
+[data-era="swiss-bauhaus"] .erp-shell {
+  background-color: #f2f2f2 !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 0 4px 0px #000000 !important;
+}
+
+[data-era="swiss-bauhaus"] .bg-white {
+  background-color: #ffffff !important;
+  border: 1.5px solid #000000 !important;
+  box-shadow: none !important;
+}
+
+[data-era="swiss-bauhaus"] button.bg-\[\#1d1d1f\] {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #000000 !important;
+}
+
+/* =========================================================================
+   ERA SYSTEM 5: NEO-BRUTALIST POP (2020s High-Contrast Hard Shadows)
+   ========================================================================= */
+[data-era="neo-brutalist"] {
+  --erp-app-bg: #fff066;
+  --erp-shell-bg: #fffbeb;
+  --erp-card-bg: #ffffff;
+  --erp-text: #000000;
+  --erp-muted: #333333;
+  --erp-border: #000000;
+  --erp-radius: 12px;
+}
+
+[data-era="neo-brutalist"] body {
+  background-color: #fff066;
+}
+
+[data-era="neo-brutalist"] .erp-shell {
+  background-color: #fffbeb !important;
+  border: 3px solid #000000 !important;
+  box-shadow: 8px 8px 0px #000000 !important;
+}
+
+[data-era="neo-brutalist"] .bg-white {
+  background-color: #ffffff !important;
+  border: 2.5px solid #000000 !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+
+[data-era="neo-brutalist"] button {
+  border: 2px solid #000000 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+  font-weight: 800 !important;
+}
+
+[data-era="neo-brutalist"] button:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #000000 !important;
+}
+
+[data-era="neo-brutalist"] button:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px #000000 !important;
+}
+
+/* =========================================================================
+   ERA SYSTEM 6: EXECUTIVE MIDNIGHT LUXURY (Royal Sapphire & Champagne Gold)
+   ========================================================================= */
+[data-era="executive-luxury"] {
+  --erp-app-bg: #020617;
+  --erp-shell-bg: #0b1120;
+  --erp-card-bg: #111c33;
+  --erp-text: #f8fafc;
+  --erp-muted: #94a3b8;
+  --erp-border: rgba(254, 185, 19, 0.28);
+  --erp-radius: 20px;
+}
+
+[data-era="executive-luxury"] body {
+  background-color: #020617;
+  color: #f8fafc;
+}
+
+[data-era="executive-luxury"] .erp-shell {
+  background-color: #0b1120 !important;
+  border-color: rgba(254, 185, 19, 0.35) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-era="executive-luxury"] header {
+  background-color: rgba(11, 17, 32, 0.95) !important;
+  border-color: rgba(254, 185, 19, 0.2) !important;
+}
+
+[data-era="executive-luxury"] .bg-white {
+  background-color: #111c33 !important;
+  border-color: rgba(254, 185, 19, 0.25) !important;
+}
+
+[data-era="executive-luxury"] .bg-\[\#f5f6f8\],
+[data-era="executive-luxury"] .bg-\[\#ebedf0\],
+[data-era="executive-luxury"] .bg-\[\#f4f5f7\],
+[data-era="executive-luxury"] .bg-slate-50,
+[data-era="executive-luxury"] .bg-slate-100 {
+  background-color: #17233f !important;
+  color: #f8fafc !important;
+  border-color: rgba(254, 185, 19, 0.2) !important;
+}
+
+[data-era="executive-luxury"] .text-\[\#1d1d1f\],
+[data-era="executive-luxury"] .text-slate-900,
+[data-era="executive-luxury"] .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+[data-era="executive-luxury"] .text-\[\#86868b\],
+[data-era="executive-luxury"] .text-slate-500,
+[data-era="executive-luxury"] .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+[data-era="executive-luxury"] .border-slate-200,
+[data-era="executive-luxury"] .border-slate-100,
+[data-era="executive-luxury"] .border-black\/\[0\.04\] {
+  border-color: rgba(254, 185, 19, 0.25) !important;
 }
 
 /* Dynamic theme radius */
@@ -93,3 +402,4 @@ body {
 .border-otp-accent {
   border-color: var(--otp-accent, #1ec94c);
 }
+

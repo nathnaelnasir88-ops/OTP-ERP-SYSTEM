@@ -10,12 +10,20 @@ import {
   FileText,
   User,
   Settings,
-  LogOut
+  LogOut,
+  Sparkles,
+  Palette,
+  Lock,
+  Clock,
+  Award,
+  MessageSquare
 } from 'lucide-react';
 import { useERP } from '../../context/ERPContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole, AppModule } from '../../types';
 import { filterAccessibleNavItems } from '../../utils/rbac';
+import { ERA_LIST, getEraDefinition } from '../../utils/eraSystems';
+import { calculateUserRewardBreakdown, formatMinutesToHoursMins } from '../../utils/timeRewards';
 
 interface TopNavbarProps {
   onToggleSidebar: () => void;
@@ -29,6 +37,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar }) => {
     setCurrentModule,
     navigateTo,
     theme,
+    setEra,
     setIsCustomizerOpen,
     notifications,
     markNotificationAsRead,
@@ -38,24 +47,39 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar }) => {
     setSearchQuery,
     clients,
     projects,
-    leads
+    leads,
+    rewardConfig,
+    userTimeRewards,
+    setIsTimeRewardsModalOpen,
+    isSessionActive,
+    chatMessages
   } = useERP();
 
   const { userProfile, updateUserRole, logout } = useAuth();
   const activeRole = userProfile?.role || currentUser.role || 'Super Administrator';
   const isSuperAdmin = activeRole === 'Super Administrator';
 
+  const activeUserId = userProfile?.id || currentUser.id || 'usr-1';
+  const myTimeRecord =
+    userTimeRewards.find((r) => r.userId === activeUserId) ||
+    userTimeRewards.find((r) => r.fullName.toLowerCase() === (userProfile?.fullName || currentUser.fullName).toLowerCase()) ||
+    userTimeRewards[0];
+  const myRewardBreakdown = calculateUserRewardBreakdown(myTimeRecord, rewardConfig);
+
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showEraMenu, setShowEraMenu] = useState(false);
 
   const roleMenuRef = useRef<HTMLDivElement>(null);
   const notifMenuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const eraMenuRef = useRef<HTMLDivElement>(null);
 
+  const activeEra = getEraDefinition(theme.era || 'cognify-bento');
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const rolesList: UserRole[] = [
@@ -73,6 +97,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar }) => {
 
   const allNavPills: { id: AppModule; label: string }[] = [
     { id: 'dashboard', label: 'Dashboard' },
+    { id: 'messages', label: 'Messages' },
     { id: 'crm', label: 'CRM' },
     { id: 'projects', label: 'Projects' },
     { id: 'smm', label: 'SMM Hub' },
@@ -101,6 +126,9 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar }) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
         setShowProfileMenu(false);
       }
+      if (eraMenuRef.current && !eraMenuRef.current.contains(event.target as Node)) {
+        setShowEraMenu(false);
+      }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -124,15 +152,19 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar }) => {
   return (
     <header className="sticky top-0 z-30 bg-[#f5f6f8]/90 backdrop-blur-md px-4 sm:px-7 lg:px-9 pt-4 pb-3">
       <div className="flex items-center justify-between gap-2">
-        {/* Left: Brand Pill (Cognify Style) */}
+        {/* Left: Brand Pill (Cognify Style with Corporate Logo) */}
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onToggleSidebar}
-            className="flex items-center gap-2 bg-[#ebedf0] hover:bg-[#dfe2e7] px-3.5 py-2 rounded-full transition-all group cursor-pointer"
+            className="flex items-center gap-2.5 bg-[#ebedf0] hover:bg-[#dfe2e7] px-3.5 py-1.5 rounded-full transition-all group cursor-pointer"
             title="Open navigation drawer"
           >
-            <div className="w-6 h-6 rounded-full bg-[#1d1d1f] text-white flex items-center justify-center font-black text-[10px] tracking-tight">
-              {theme.companyShortName || 'OTP'}
+            <div className="w-7 h-7 rounded-full overflow-hidden bg-black flex items-center justify-center shrink-0 border border-black/10 shadow-xs">
+              <img
+                src={theme.logoImageUrl || '/assets/aistudio/2025-07-24_12.34.50_1f1aaac7.jpg'}
+                alt={theme.companyName || 'Open Technology PLC'}
+                className="w-full h-full object-cover"
+              />
             </div>
             <span className="font-bold text-sm text-[#1d1d1f] tracking-tight">
               {theme.companyName === 'Open Technology PLC' ? 'OpenTech' : theme.companyName}
@@ -270,6 +302,29 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar }) => {
             )}
           </div>
 
+          {/* Live Time Spent & Reward Points Pill */}
+          <button
+            type="button"
+            onClick={() => setIsTimeRewardsModalOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1d1d1f] hover:bg-slate-800 text-white transition-all text-xs cursor-pointer shadow-xs"
+            title="View Active Time Spent, Reward Points & Admin Rewards Method"
+            aria-label="Open Time Spent and Reward Points Studio"
+          >
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${
+                isSessionActive ? 'bg-[#1ec94c] animate-pulse' : 'bg-amber-400'
+              }`}
+            />
+            <span className="font-semibold tracking-tight hidden sm:inline">
+              {formatMinutesToHoursMins(myTimeRecord.todayActiveMinutes)}
+            </span>
+            <span className="text-white/30 hidden sm:inline">|</span>
+            <span className="flex items-center gap-1 font-bold text-[#feb913]">
+              <Award className="w-3.5 h-3.5 shrink-0" />
+              <span>{myRewardBreakdown.availablePoints.toLocaleString()} pts</span>
+            </span>
+          </button>
+
           {/* Role Switcher / Indicator Pill */}
           <div className="relative" ref={roleMenuRef}>
             {isSuperAdmin ? (
@@ -333,14 +388,152 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleSidebar }) => {
             )}
           </div>
 
-          {/* Settings / UI Customizer Circular Button (Exact Cognify Gear Icon) */}
+          {/* Era Design System Switcher: Interactive for Super Admin, Read-only Indicator with Lock for Non-Admin */}
+          {isSuperAdmin ? (
+            <div className="relative" ref={eraMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowEraMenu(!showEraMenu)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#ebedf0] hover:bg-[#dfe2e7] transition-all text-xs font-semibold text-[#1d1d1f] cursor-pointer"
+                title="Switch ERP Design Era System (Super Admin)"
+                aria-label="Switch Design Era"
+              >
+                <span className="text-sm shrink-0">{activeEra.iconEmoji}</span>
+                <span className="hidden sm:inline font-semibold">{activeEra.name}</span>
+                <ChevronDown className="w-3 h-3 text-slate-500" />
+              </button>
+
+              {showEraMenu && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 z-50 p-2.5 overflow-hidden animate-in fade-in duration-150">
+                  <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-xs text-[#1d1d1f] flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-[#1ec94c]" />
+                        <span>ERP Era Design Systems</span>
+                      </div>
+                      <p className="text-[10px] text-[#86868b] mt-0.5">
+                        Transform brand UI across every area of the system
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEraMenu(false);
+                        setIsCustomizerOpen(true);
+                      }}
+                      className="text-[10px] font-semibold text-[#1d7dfa] hover:underline cursor-pointer"
+                    >
+                      Studio
+                    </button>
+                  </div>
+
+                  <div className="py-1.5 space-y-1">
+                    {ERA_LIST.map((era) => {
+                      const isCurrent = (theme.era || 'cognify-bento') === era.id;
+                      return (
+                        <button
+                          key={era.id}
+                          type="button"
+                          onClick={() => {
+                            setEra(era.id);
+                            setShowEraMenu(false);
+                          }}
+                          className={`w-full text-left p-2.5 rounded-2xl text-xs flex items-center justify-between transition-all cursor-pointer ${
+                            isCurrent
+                              ? 'bg-[#1d1d1f] text-white shadow-xs'
+                              : 'hover:bg-[#f5f6f8] text-[#1d1d1f]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-base shrink-0">{era.iconEmoji}</span>
+                            <div className="min-w-0">
+                              <div className="font-bold truncate flex items-center gap-1.5">
+                                <span>{era.name}</span>
+                                <span
+                                  className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${
+                                    isCurrent
+                                      ? 'bg-white/20 text-white'
+                                      : 'bg-[#ebedf0] text-slate-700'
+                                  }`}
+                                >
+                                  {era.eraName.split(' ')[0]}
+                                </span>
+                              </div>
+                              <div
+                                className={`text-[10px] truncate ${
+                                  isCurrent ? 'text-slate-300' : 'text-[#86868b]'
+                                }`}
+                              >
+                                {era.tagline}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <div
+                              className="w-3 h-3 rounded-full border border-white/40 shadow-xs"
+                              style={{ backgroundColor: era.primaryColor }}
+                            />
+                            <div
+                              className="w-3 h-3 rounded-full border border-white/40 shadow-xs"
+                              style={{ backgroundColor: era.accentColor }}
+                            />
+                            {isCurrent && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#1ec94c] ml-1" />
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#ebedf0] text-xs font-semibold text-[#1d1d1f] cursor-default opacity-90"
+              title="Design Era is configured by the Super Administrator"
+            >
+              <span className="text-sm shrink-0">{activeEra.iconEmoji}</span>
+              <span className="hidden sm:inline font-semibold text-slate-700">{activeEra.name}</span>
+              <Lock className="w-3 h-3 text-slate-400 ml-0.5" />
+            </div>
+          )}
+
+          {/* Settings / UI Customizer Circular Button (Super Admin opens Brand Studio, Other roles open Profile Settings) */}
+          {isSuperAdmin ? (
+            <button
+              onClick={() => setIsCustomizerOpen(true)}
+              title="Design & Brand Studio (Super Admin)"
+              aria-label="Design & Brand Studio"
+              className="w-10 h-10 rounded-full bg-[#ebedf0] hover:bg-[#dfe2e7] flex items-center justify-center text-[#1d1d1f] transition-colors cursor-pointer"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={() => setCurrentModule('settings')}
+              title="User Profile & Settings"
+              aria-label="Settings"
+              className="w-10 h-10 rounded-full bg-[#ebedf0] hover:bg-[#dfe2e7] flex items-center justify-center text-[#1d1d1f] transition-colors cursor-pointer"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Team Chat / Messages Circular Shortcut Button */}
           <button
-            onClick={() => setIsCustomizerOpen(true)}
-            title="Design & Brand Studio"
-            aria-label="Design & Brand"
-            className="w-10 h-10 rounded-full bg-[#ebedf0] hover:bg-[#dfe2e7] flex items-center justify-center text-[#1d1d1f] transition-colors cursor-pointer"
+            onClick={() => setCurrentModule('messages')}
+            title={`Team Chat & Messages (${chatMessages.length} messages)`}
+            aria-label="Open Team Chat & Messages"
+            className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
+              currentModule === 'messages'
+                ? 'bg-[#1d1d1f] text-white shadow-xs'
+                : 'bg-[#ebedf0] hover:bg-[#dfe2e7] text-[#1d1d1f]'
+            }`}
           >
-            <Settings className="w-4 h-4" />
+            <MessageSquare className="w-4 h-4" />
+            <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[#1ec94c] ring-2 ring-[#ebedf0]"></span>
           </button>
 
           {/* Notifications Bell Circular Button (with Green Dot like Cognify) */}

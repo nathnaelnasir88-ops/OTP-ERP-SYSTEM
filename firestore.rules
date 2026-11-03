@@ -110,5 +110,34 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isSignedIn();
     }
+
+    // Audit Logs
+    match /audit_logs/{logId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // System Config & Rewards
+    match /system_config/{configId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    match /reward_redemptions/{redemptionId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // Real-Time Team Chat Channels & Messages
+    match /chatChannels/{channelId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /chatMessages/{messageId} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }
+

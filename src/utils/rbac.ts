@@ -3,6 +3,7 @@ import { AppModule, UserRole } from '../types';
 export const ROLE_PERMISSIONS: Record<UserRole, AppModule[]> = {
   'Super Administrator': [
     'dashboard',
+    'messages',
     'crm',
     'projects',
     'smm',
@@ -15,6 +16,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, AppModule[]> = {
   ],
   'Managing Director': [
     'dashboard',
+    'messages',
     'crm',
     'projects',
     'smm',
@@ -27,6 +29,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, AppModule[]> = {
   ],
   'Finance Manager': [
     'dashboard',
+    'messages',
     'finance',
     'procurement',
     'reports',
@@ -34,6 +37,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, AppModule[]> = {
   ],
   'Marketing Manager': [
     'dashboard',
+    'messages',
     'crm',
     'smm',
     'advertising',
@@ -43,6 +47,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, AppModule[]> = {
   ],
   'Project Manager': [
     'dashboard',
+    'messages',
     'projects',
     'crm',
     'smm',
@@ -51,6 +56,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, AppModule[]> = {
   ],
   'Social Media Manager': [
     'dashboard',
+    'messages',
     'smm',
     'projects',
     'reports',
@@ -58,24 +64,28 @@ export const ROLE_PERMISSIONS: Record<UserRole, AppModule[]> = {
   ],
   'Designer / Content Creator': [
     'dashboard',
+    'messages',
     'smm',
     'projects',
     'settings'
   ],
   'Media Buyer': [
     'dashboard',
+    'messages',
     'advertising',
     'reports',
     'settings'
   ],
   'HR Manager': [
     'dashboard',
+    'messages',
     'hr',
     'reports',
     'settings'
   ],
   'Employee': [
     'dashboard',
+    'messages',
     'projects',
     'settings'
   ]
@@ -103,4 +113,13 @@ export function getAccessibleModules(role: UserRole): AppModule[] {
 export function filterAccessibleNavItems<T extends { id: AppModule }>(items: T[], role: UserRole): T[] {
   return items.filter((item) => hasModuleAccess(role, item.id));
 }
+
+/**
+ * UI Design System & Brand Aesthetics Authority
+ * Strictly restricted to Super Administrator.
+ */
+export function canChangeUIDesign(role: UserRole): boolean {
+  return role === 'Super Administrator';
+}
+
 

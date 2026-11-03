@@ -30,11 +30,15 @@ import {
   Briefcase,
   Phone,
   Mail,
-  BadgeAlert
+  BadgeAlert,
+  Edit3,
+  X,
+  Award
 } from 'lucide-react';
 import { useERP } from '../../context/ERPContext';
 import { useAuth } from '../../context/AuthContext';
-import { UserRole, Department, SidebarTone, LogoStyle, LayoutDensity, BorderRadiusOption } from '../../types';
+import { UserRole, Department, SidebarTone, LogoStyle, LayoutDensity, BorderRadiusOption, ManagedUserAccount } from '../../types';
+import { ERA_LIST, getEraDefinition } from '../../utils/eraSystems';
 
 export const SettingsModule: React.FC = () => {
   const {
@@ -46,8 +50,12 @@ export const SettingsModule: React.FC = () => {
     isFirebaseConnected,
     theme,
     updateTheme,
+    setEra,
     resetTheme,
-    addEmployee
+    addEmployee,
+    recordAuditLog,
+    setIsTimeRewardsModalOpen,
+    rewardConfig
   } = useERP();
 
   const {
@@ -117,6 +125,105 @@ export const SettingsModule: React.FC = () => {
     password: string;
     role: string;
   } | null>(null);
+
+  // Edit Existing User State & Role Management (Super Admin)
+  const [editingMember, setEditingMember] = useState<ManagedUserAccount | null>(null);
+  const [editForm, setEditForm] = useState({
+    fullName: '',
+    role: 'Employee' as UserRole,
+    department: 'Marketing' as Department,
+    position: '',
+    phone: '',
+    password: '',
+    status: 'Active' as 'Active' | 'Inactive'
+  });
+
+  const handleOpenEditMember = (member: ManagedUserAccount) => {
+    setEditingMember(member);
+    setEditForm({
+      fullName: member.fullName,
+      role: member.role,
+      department: member.department,
+      position: member.position || '',
+      phone: member.phone || '',
+      password: '',
+      status: member.status === 'Inactive' ? 'Inactive' : 'Active'
+    });
+  };
+
+  const handleUpdateRoleDirectly = async (acc: ManagedUserAccount, newRole: UserRole) => {
+    if (newRole === acc.role) return;
+    const prevRole = acc.role;
+    if (acc.username === 'admin' && newRole !== 'Super Administrator') {
+      if (!window.confirm('Warning: Demoting the primary root "admin" account will remove its Super Administrator privileges. Continue?')) {
+        return;
+      }
+    }
+
+    await updateMemberByAdmin(acc.id, { role: newRole });
+
+    recordAuditLog({
+      domain: 'hr',
+      action: 'UPDATE',
+      entityType: 'UserRole',
+      entityId: acc.username,
+      summary: `Super Administrator changed role for ${acc.fullName} from "${prevRole}" to "${newRole}"`,
+      previousValue: `Role: ${prevRole}`,
+      newValue: `Role: ${newRole}`,
+      department: acc.department || 'Management',
+      severity: 'elevated'
+    });
+
+    setSuccessMessage(`Role for ${acc.fullName} changed to ${newRole}!`);
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 3500);
+  };
+
+  const handleSaveEditMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMember) return;
+
+    const prevRole = editingMember.role;
+    if (editingMember.username === 'admin' && editForm.role !== 'Super Administrator') {
+      if (!window.confirm('Warning: Demoting the primary root "admin" account will remove its Super Administrator privileges. Continue?')) {
+        return;
+      }
+    }
+
+    const updates: Partial<ManagedUserAccount> = {
+      fullName: editForm.fullName.trim(),
+      role: editForm.role,
+      department: editForm.department,
+      position: editForm.position.trim(),
+      phone: editForm.phone.trim(),
+      status: editForm.status
+    };
+
+    if (editForm.password.trim()) {
+      updates.password = editForm.password.trim();
+    }
+
+    await updateMemberByAdmin(editingMember.id, updates);
+
+    if (editForm.role !== prevRole) {
+      recordAuditLog({
+        domain: 'hr',
+        action: 'UPDATE',
+        entityType: 'UserRole',
+        entityId: editingMember.username,
+        summary: `Super Administrator changed role for ${editingMember.fullName} from "${prevRole}" to "${editForm.role}"`,
+        previousValue: `Role: ${prevRole}`,
+        newValue: `Role: ${editForm.role}`,
+        department: editForm.department,
+        severity: 'elevated'
+      });
+    }
+
+    setEditingMember(null);
+    setSuccessMessage(`Account details and role for ${editForm.fullName} updated successfully!`);
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 3500);
+  };
 
   // Company Settings Form (Super Admin only)
   const [companyForm, setCompanyForm] = useState({
@@ -308,7 +415,7 @@ export const SettingsModule: React.FC = () => {
               </span>
             </div>
             <p className="mt-0.5 text-amber-800/90 leading-relaxed">
-              Administrative functions (User Provisioning, RBAC Permissions Matrix, Corporate Targets, and Database Maintenance) are restricted to the <strong>Super Administrator</strong>. You have permission to update your personal name/profile and customize your workspace UI appearance.
+              Administrative functions (User Provisioning, RBAC Permissions Matrix, Corporate Targets, UI Design Alterations, and Database Maintenance) are restricted to the <strong>Super Administrator</strong>. You have permission to update your personal name/profile. UI design is centrally managed corporate-wide by the Super Administrator.
             </p>
           </div>
         </div>
@@ -328,7 +435,7 @@ export const SettingsModule: React.FC = () => {
           {/* PROFILE TAB (Available to ALL users) */}
           <button
             onClick={() => setActiveTab('profile')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'profile'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -338,10 +445,10 @@ export const SettingsModule: React.FC = () => {
             <span>My Profile</span>
           </button>
 
-          {/* BRAND & UI TAB (Available to ALL users) */}
+          {/* BRAND & UI TAB (Full for Super Admin, Read-Only for other roles) */}
           <button
             onClick={() => setActiveTab('brand')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'brand'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -351,7 +458,18 @@ export const SettingsModule: React.FC = () => {
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: theme.accentColor }}
             />
-            <span>Brand & UI Appearance</span>
+            <span>Brand & UI Design {isSuperAdmin ? 'Studio' : '(Read-Only)'}</span>
+            {!isSuperAdmin && <Lock className="w-3 h-3 text-slate-400 ml-0.5" />}
+          </button>
+
+          {/* TIME SPENT & LOGICAL REWARDS ENGINE STUDIO BUTTON */}
+          <button
+            type="button"
+            onClick={() => setIsTimeRewardsModalOpen(true)}
+            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 text-slate-700 hover:bg-white hover:text-slate-900 cursor-pointer"
+          >
+            <Award className="w-3.5 h-3.5 text-amber-500" />
+            <span>Time & Rewards Engine ({rewardConfig.method})</span>
           </button>
 
           {/* ADMIN-ONLY TABS */}
@@ -918,32 +1036,71 @@ export const SettingsModule: React.FC = () => {
                           </div>
                         </td>
                         <td className="py-3 px-4">
-                          <span
-                            className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                            style={{
-                              backgroundColor: acc.role === 'Super Administrator' ? '#fef3c7' : '#f1f5f9',
-                              color: acc.role === 'Super Administrator' ? '#92400e' : '#334155'
-                            }}
+                          <select
+                            value={acc.role}
+                            onChange={(e) => handleUpdateRoleDirectly(acc, e.target.value as UserRole)}
+                            title="Change user role (Super Admin)"
+                            aria-label={`Change role for ${acc.fullName}`}
+                            className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer focus:outline-hidden ${
+                              acc.role === 'Super Administrator'
+                                ? 'bg-amber-50 text-amber-900 border-amber-300 focus:ring-2 focus:ring-amber-500'
+                                : acc.role === 'Managing Director'
+                                ? 'bg-purple-50 text-purple-900 border-purple-300 focus:ring-2 focus:ring-purple-500'
+                                : acc.role === 'Finance Manager'
+                                ? 'bg-emerald-50 text-emerald-900 border-emerald-300 focus:ring-2 focus:ring-emerald-500'
+                                : acc.role === 'Marketing Manager'
+                                ? 'bg-blue-50 text-blue-900 border-blue-300 focus:ring-2 focus:ring-blue-500'
+                                : acc.role === 'Project Manager'
+                                ? 'bg-cyan-50 text-cyan-900 border-cyan-300 focus:ring-2 focus:ring-cyan-500'
+                                : acc.role === 'Social Media Manager'
+                                ? 'bg-pink-50 text-pink-900 border-pink-300 focus:ring-2 focus:ring-pink-500'
+                                : acc.role === 'Designer / Content Creator'
+                                ? 'bg-fuchsia-50 text-fuchsia-900 border-fuchsia-300 focus:ring-2 focus:ring-fuchsia-500'
+                                : acc.role === 'Media Buyer'
+                                ? 'bg-orange-50 text-orange-900 border-orange-300 focus:ring-2 focus:ring-orange-500'
+                                : acc.role === 'HR Manager'
+                                ? 'bg-teal-50 text-teal-900 border-teal-300 focus:ring-2 focus:ring-teal-500'
+                                : 'bg-slate-50 text-slate-800 border-slate-300 focus:ring-2 focus:ring-slate-500'
+                            }`}
                           >
-                            {acc.role}
-                          </span>
+                            <option value="Super Administrator">Super Administrator</option>
+                            <option value="Managing Director">Managing Director</option>
+                            <option value="Finance Manager">Finance Manager</option>
+                            <option value="Marketing Manager">Marketing Manager</option>
+                            <option value="Project Manager">Project Manager</option>
+                            <option value="Social Media Manager">Social Media Manager</option>
+                            <option value="Designer / Content Creator">Designer</option>
+                            <option value="Media Buyer">Media Buyer</option>
+                            <option value="HR Manager">HR Manager</option>
+                            <option value="Employee">Employee</option>
+                          </select>
                         </td>
                         <td className="py-3 px-4 text-slate-600">{acc.department}</td>
                         <td className="py-3 px-4 text-right">
-                          {acc.username !== 'admin' && (
+                          <div className="flex items-center justify-end gap-1">
                             <button
                               type="button"
-                              onClick={() => {
-                                if (window.confirm(`Remove member account for ${acc.fullName}?`)) {
-                                  removeMemberByAdmin(acc.id);
-                                }
-                              }}
-                              className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
-                              title="Remove Member"
+                              onClick={() => handleOpenEditMember(acc)}
+                              className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                              title="Edit Member Role & Account"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Edit3 className="w-3.5 h-3.5" />
                             </button>
-                          )}
+                            {acc.username !== 'admin' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm(`Remove member account for ${acc.fullName}?`)) {
+                                    removeMemberByAdmin(acc.id);
+                                  }
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                title="Remove Member"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -952,6 +1109,176 @@ export const SettingsModule: React.FC = () => {
               </table>
             </div>
           </div>
+
+          {/* Edit Member & Role Modal */}
+          {editingMember && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+              <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-150">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={editingMember.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+                      alt={editingMember.fullName}
+                      className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-xs"
+                    />
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                        <span>Edit Member: {editingMember.fullName}</span>
+                      </h3>
+                      <p className="text-[11px] text-slate-500 font-mono">
+                        @{editingMember.username} • {editingMember.email}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setEditingMember(null)}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveEditMember} className="p-6 space-y-4 text-xs">
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-slate-800 font-semibold mb-1">
+                      Full Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.fullName}
+                      onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-slate-900 font-medium"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Assigned Role */}
+                    <div>
+                      <label className="block text-slate-800 font-semibold mb-1">
+                        Assigned Role <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        value={editForm.role}
+                        onChange={(e) => setEditForm({ ...editForm, role: e.target.value as UserRole })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-xl font-bold text-slate-900 bg-white"
+                      >
+                        <option value="Super Administrator">Super Administrator</option>
+                        <option value="Managing Director">Managing Director</option>
+                        <option value="Finance Manager">Finance Manager</option>
+                        <option value="Marketing Manager">Marketing Manager</option>
+                        <option value="Project Manager">Project Manager</option>
+                        <option value="Social Media Manager">Social Media Manager</option>
+                        <option value="Designer / Content Creator">Designer</option>
+                        <option value="Media Buyer">Media Buyer</option>
+                        <option value="HR Manager">HR Manager</option>
+                        <option value="Employee">Employee</option>
+                      </select>
+                      <span className="text-[10px] text-slate-400 mt-0.5 block">
+                        Determines module access & permissions
+                      </span>
+                    </div>
+
+                    {/* Department */}
+                    <div>
+                      <label className="block text-slate-800 font-semibold mb-1">Department</label>
+                      <select
+                        value={editForm.department}
+                        onChange={(e) => setEditForm({ ...editForm, department: e.target.value as Department })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium text-slate-900 bg-white"
+                      >
+                        <option value="Management">Management</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Creative & Design">Creative & Design</option>
+                        <option value="Video Production">Video Production</option>
+                        <option value="Advertising">Advertising</option>
+                        <option value="Administration">Administration</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Position */}
+                    <div>
+                      <label className="block text-slate-800 font-semibold mb-1">Position / Title</label>
+                      <input
+                        type="text"
+                        value={editForm.position}
+                        onChange={(e) => setEditForm({ ...editForm, position: e.target.value })}
+                        placeholder="e.g. Senior Strategist"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-xl text-slate-800"
+                      />
+                    </div>
+
+                    {/* Phone */}
+                    <div>
+                      <label className="block text-slate-800 font-semibold mb-1">Contact Phone</label>
+                      <input
+                        type="text"
+                        value={editForm.phone}
+                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                        placeholder="+251 911 ..."
+                        className="w-full px-3 py-2 border border-slate-300 rounded-xl text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Reset Password Optional Field */}
+                  <div>
+                    <label className="block text-slate-800 font-semibold mb-1 flex items-center justify-between">
+                      <span>Reset Password (Optional)</span>
+                      <span className="text-[10px] text-slate-400">Leave blank to keep existing password</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={editForm.password}
+                        onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                        placeholder="Enter new password to reset..."
+                        className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-slate-900 text-xs"
+                      />
+                      <KeyRound className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                    </div>
+                  </div>
+
+                  {/* Account Status */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-slate-900 text-xs">Account Access Status</div>
+                      <div className="text-[11px] text-slate-500">Allow or suspend member sign in</div>
+                    </div>
+                    <select
+                      value={editForm.status}
+                      onChange={(e) => setEditForm({ ...editForm, status: e.target.value as 'Active' | 'Inactive' })}
+                      className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold"
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Suspended</option>
+                    </select>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setEditingMember(null)}
+                      className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#1d1d1f] hover:bg-slate-800 text-white rounded-xl font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Save Member & Role Changes</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -960,18 +1287,33 @@ export const SettingsModule: React.FC = () => {
           ========================================================================= */}
       {activeTab === 'brand' && (
         <div className="space-y-6 text-xs">
+          {/* Super Admin Restriction Alert Banner */}
+          {!isSuperAdmin && (
+            <div className="bg-amber-50/90 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 text-xs text-amber-900 shadow-xs">
+              <Lock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="font-bold flex items-center gap-2">
+                  <span>UI Design System Managed by Super Administrator</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-200/60 font-mono text-amber-800">
+                    {userProfile?.role || currentUser.role}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-amber-800/90 leading-relaxed">
+                  Only the <strong>Super Administrator</strong> has privilege to change design eras, corporate colors, sidebar styling, and interface simplicity. You are viewing active system designs in read-only mode.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Header & Status */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-md font-black text-lg tracking-wider"
-                style={{
-                  backgroundColor: theme.primaryColor,
-                  color: theme.accentColor,
-                  border: `2px solid ${theme.accentColor}`
-                }}
-              >
-                {theme.companyShortName}
+              <div className="w-12 h-12 rounded-2xl overflow-hidden bg-black flex items-center justify-center shadow-md shrink-0 border border-black/20">
+                <img
+                  src={theme.logoImageUrl || '/assets/aistudio/2025-07-24_12.34.50_1f1aaac7.jpg'}
+                  alt={theme.companyName || 'OTP'}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
@@ -989,48 +1331,123 @@ export const SettingsModule: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  updateTheme({
-                    primaryColor: '#545454',
-                    accentColor: '#feb913',
-                    sidebarTone: 'charcoal'
-                  });
-                  setSavedSuccess(true);
-                  setSuccessMessage('Signature OTP palette #545454 and #feb913 applied!');
-                  setTimeout(() => setSavedSuccess(false), 3000);
-                }}
-                className="px-3.5 py-2 text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition-all"
-                style={{
-                  backgroundColor: '#feb913',
-                  color: '#1a1a1a',
-                  border: '1px solid #e5a408'
-                }}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Apply #545454 & #feb913 OTP Signature</span>
-              </button>
+            {isSuperAdmin ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    updateTheme({
+                      primaryColor: '#545454',
+                      accentColor: '#feb913',
+                      sidebarTone: 'charcoal'
+                    });
+                    setSavedSuccess(true);
+                    setSuccessMessage('Signature OTP palette #545454 and #feb913 applied!');
+                    setTimeout(() => setSavedSuccess(false), 3000);
+                  }}
+                  className="px-3.5 py-2 text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                  style={{
+                    backgroundColor: '#feb913',
+                    color: '#1a1a1a',
+                    border: '1px solid #e5a408'
+                  }}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Apply #545454 & #feb913 OTP Signature</span>
+                </button>
 
-              <button
-                onClick={() => {
-                  resetTheme();
-                  setSavedSuccess(true);
-                  setSuccessMessage('UI theme reset to standard defaults.');
-                  setTimeout(() => setSavedSuccess(false), 3000);
-                }}
-                className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1.5"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Defaults</span>
-              </button>
-            </div>
+                <button
+                  onClick={() => {
+                    resetTheme();
+                    setSavedSuccess(true);
+                    setSuccessMessage('UI theme reset to standard defaults.');
+                    setTimeout(() => setSavedSuccess(false), 3000);
+                  }}
+                  className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Defaults</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 font-semibold text-xs">
+                <Lock className="w-3.5 h-3.5 text-amber-600" />
+                <span>Customization Locked (Admin Only)</span>
+              </div>
+            )}
           </div>
 
           {/* Grid Layout: Controls & Live Sandbox */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left 2 Cols: Controls */}
-            <div className="lg:col-span-2 space-y-6">
+            <fieldset disabled={!isSuperAdmin} className={`lg:col-span-2 space-y-6 ${!isSuperAdmin ? 'opacity-85' : ''}`}>
+              {/* Era Design Systems Selection */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#1ec94c]" />
+                    <span>ERP Era Design Systems</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold">
+                    Morphs entire ERP UI
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {ERA_LIST.map((era) => {
+                    const isSelected = (theme.era || 'cognify-bento') === era.id;
+                    return (
+                      <button
+                        key={era.id}
+                        type="button"
+                        disabled={!isSuperAdmin}
+                        onClick={() => {
+                          if (!isSuperAdmin) return;
+                          setEra(era.id);
+                          setSuccessMessage(`Activated ${era.name}! Every area in the ERP system has updated.`);
+                          setSavedSuccess(true);
+                          setTimeout(() => setSavedSuccess(false), 3000);
+                        }}
+                        className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                          isSelected
+                            ? 'border-slate-900 bg-slate-50 ring-2 ring-slate-900/10 shadow-xs'
+                            : !isSuperAdmin
+                            ? 'border-slate-200 bg-slate-50/50 cursor-not-allowed opacity-75'
+                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 cursor-pointer'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-base">{era.iconEmoji}</span>
+                            <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 rounded bg-slate-200/70 text-slate-700">
+                              {era.eraName.split(' ')[0]}
+                            </span>
+                          </div>
+                          <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                            <span>{era.name}</span>
+                            {isSelected && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#1ec94c]" />
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                            {era.tagline}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100 text-[10px]">
+                          <div className="flex items-center gap-1">
+                            <div className="w-3.5 h-3.5 rounded-full border border-black/10" style={{ backgroundColor: era.primaryColor }} />
+                            <div className="w-3.5 h-3.5 rounded-full border border-black/10" style={{ backgroundColor: era.accentColor }} />
+                          </div>
+                          <span className={`font-bold flex items-center gap-1 ${isSelected ? 'text-[#1ec94c]' : !isSuperAdmin ? 'text-slate-400' : 'text-slate-600'}`}>
+                            {isSelected ? 'Active Era' : !isSuperAdmin ? <><Lock className="w-2.5 h-2.5 text-slate-400" /> Admin Only</> : 'Switch Era →'}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Presets */}
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
                 <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
@@ -1174,7 +1591,7 @@ export const SettingsModule: React.FC = () => {
                   </button>
                 </div>
               </div>
-            </div>
+            </fieldset>
 
             {/* Right Col: Live Interactive Preview */}
             <div className="space-y-4">

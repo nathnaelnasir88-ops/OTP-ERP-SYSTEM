@@ -13,13 +13,16 @@ import {
   Flame,
   ChevronRight,
   Palette,
-  Shield
+  Shield,
+  Lock,
+  MessageSquare
 } from 'lucide-react';
 import { useERP } from '../../context/ERPContext';
 import { useAuth } from '../../context/AuthContext';
 import { AppModule } from '../../types';
 import { calculateSMMMetrics } from '../../utils/calculations';
 import { hasModuleAccess, getDefaultModuleForRole, filterAccessibleNavItems } from '../../utils/rbac';
+import { getEraDefinition } from '../../utils/eraSystems';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -36,11 +39,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     leads,
     settings,
     theme,
-    setIsCustomizerOpen
+    setIsCustomizerOpen,
+    chatMessages
   } = useERP();
   const { userProfile } = useAuth();
 
   const activeRole = userProfile?.role || currentUser?.role || 'Super Administrator';
+  const isSuperAdmin = activeRole === 'Super Administrator';
 
   // Automatically reroute if user's current module is not allowed for their active role
   React.useEffect(() => {
@@ -65,6 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     badge?: string | number;
   }[] = [
     { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard },
+    { id: 'messages', label: 'Messages & Team Chat', icon: MessageSquare, badge: `${chatMessages.length} live` },
     { id: 'crm', label: 'CRM & Sales', icon: Users2, badge: activeLeadsCount },
     { id: 'projects', label: 'Projects & Operations', icon: FolderKanban, badge: activeProjectsCount },
     { id: 'smm', label: 'Social Media Hub', icon: Share2, badge: reviewContentCount > 0 ? `${reviewContentCount} review` : undefined },
@@ -98,8 +104,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {/* Brand Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-[#f8f9fb]">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-[#1d1d1f] text-white flex items-center justify-center font-bold text-xs tracking-wider shadow-xs shrink-0">
-              {theme.companyShortName || 'OTP'}
+            <div className="w-9 h-9 rounded-full overflow-hidden bg-black flex items-center justify-center shadow-xs shrink-0 border border-slate-200">
+              <img
+                src={theme.logoImageUrl || '/assets/aistudio/2025-07-24_12.34.50_1f1aaac7.jpg'}
+                alt={theme.companyName || 'OTP'}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-bold text-sm tracking-tight truncate text-[#1d1d1f]" title={theme.companyName}>
@@ -199,18 +209,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           })}
         </nav>
 
-        {/* Footer info & Customizer Quick Trigger */}
+        {/* Footer info: Brand Studio for Super Admin, Brand Info for other roles */}
         <div className="p-3.5 border-t border-slate-100 bg-[#f8f9fb] text-xs">
-          <button
-            onClick={() => {
-              setIsCustomizerOpen(true);
-              onClose();
-            }}
-            className="w-full py-2.5 px-4 rounded-full text-xs font-medium bg-[#1d1d1f] text-white hover:bg-[#323235] flex items-center justify-center gap-2 transition-all shadow-xs"
-          >
-            <Palette className="w-3.5 h-3.5" />
-            <span>Customize Brand & UI</span>
-          </button>
+          {isSuperAdmin ? (
+            <button
+              onClick={() => {
+                setIsCustomizerOpen(true);
+                onClose();
+              }}
+              className="w-full py-2.5 px-4 rounded-full text-xs font-medium bg-[#1d1d1f] text-white hover:bg-[#323235] flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
+            >
+              <Palette className="w-3.5 h-3.5" />
+              <span>Customize Brand & UI</span>
+            </button>
+          ) : (
+            <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-white border border-slate-200/80 text-[11px] text-slate-500 shadow-xs">
+              <span className="flex items-center gap-1.5 font-medium text-slate-700">
+                <span>{theme.era ? getEraDefinition(theme.era).iconEmoji : '⚡'}</span>
+                <span>{theme.era ? getEraDefinition(theme.era).name : 'Brand Theme'}</span>
+              </span>
+              <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-mono flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5" /> Managed by Admin
+              </span>
+            </div>
+          )}
         </div>
       </aside>
     </>
